@@ -539,32 +539,20 @@ async function getValidIds() {
 }
 
 async function fetchAllConstituencies() {
-  const seatMap = {};
-
-  for (let i = 1; i <= 294; i++) {
-    const id = i.toString().padStart(3, '0');
-
-    try {
-      // 🔥 DIRECT PROXY CALL (NO BACKEND)
-      const url = `https://results.eci.gov.in/ResultAcGenMay2026/statewiseS25${id}.htm`;
-
-      const html = await proxyFetch(url);
-
-      const parsed = parseConstPage(html);
-      Object.assign(seatMap, parsed);
-
-      // 🔥 live map update
-      if (i % 5 === 0) {
-        renderMap(seatMap);
-      }
-
-    } catch (e) {
-      console.log("Fail:", id);
-    }
-  }
-
-  console.log("FINAL:", Object.keys(seatMap).length);
-
+  document.getElementById('map-st').textContent =
+    '⏳ Server se seat data aa raha hai...';
+ 
+  const res = await fetch('https://wb-election-api.onrender.com/api/seatmap');
+ 
+  if (!res.ok) throw new Error('seatmap fetch failed: ' + res.status);
+ 
+  const data = await res.json();
+  const seatMap = data.seatMap || {};
+  const count   = data.count   || Object.keys(seatMap).length;
+ 
+  document.getElementById('map-st').textContent =
+    `✅ ${count} seats mapped (server se)`;
+ 
   return seatMap;
 }
 

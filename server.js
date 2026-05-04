@@ -6,173 +6,140 @@ const app = express();
 app.use(cors());
 app.get('/', (req, res) => res.send('API is running 🚀'));
 
-const ECI_ROOT = 'https://results.eci.gov.in/';
-const ECI_BASE = 'https://results.eci.gov.in/ResultAcGenMay2026/';
+const ECI = 'https://results.eci.gov.in/ResultAcGenMay2026/';
 
-// ══════════════════════════════════════════
-// SESSION MANAGEMENT
-// ECI needs cookies from the main page
-// ══════════════════════════════════════════
-let session = { cookies: '', ts: 0 };
-
-async function getSession() {
-  if (session.cookies && Date.now() - session.ts < 600_000) return session.cookies;
+async function fetchECI(path) {
   try {
-    console.log('Getting ECI session...');
-    const res = await fetch(ECI_ROOT, {
+    const res = await fetch(ECI + path, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+        'Accept': 'text/html,*/*',
         'Accept-Language': 'en-IN,en;q=0.9',
-      },
-      redirect: 'follow',
-    });
-    // Collect all Set-Cookie headers
-    const raw = res.headers.raw()['set-cookie'] || [];
-    const cookies = raw.map(c => c.split(';')[0]).join('; ');
-    console.log('Session cookies:', cookies || '(none)');
-    session = { cookies, ts: Date.now() };
-    return cookies;
-  } catch (e) {
-    console.warn('Session fetch failed:', e.message);
-    return '';
-  }
-}
-
-async function eciGet(path, extraHdrs = {}) {
-  const cookies = await getSession();
-  const url = path.startsWith('http') ? path : ECI_BASE + path;
-  try {
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
-        'Accept-Language': 'en-IN,en;q=0.9',
-        'Referer': ECI_BASE,
-        'Cookie': cookies,
-        ...extraHdrs,
+        'Referer': 'https://results.eci.gov.in/',
       },
     });
     const text = await res.text();
-    console.log(`[${res.status}] ${path.slice(-50)} len=${text.length}`);
-    return { ok: res.status === 200 && text.length > 300 && !text.includes('Access Denied'), status: res.status, text };
+    console.log(`[${res.status}] ${path} len=${text.length}`);
+    return res.status === 200 && text.length > 200 ? text : null;
   } catch (e) {
-    console.warn(`FAIL ${path}: ${e.message}`);
-    return { ok: false, status: 0, text: '' };
+    console.warn('fetchECI failed:', e.message);
+    return null;
   }
 }
 
 // ══════════════════════════════════════════
-// PARTY TOTALS
+// Parse ECI party page HTML → clean array
 // ══════════════════════════════════════════
-let partyCache = { html: null, ts: 0 };
-app.get('/api/party', async (req, res) => {
-  if (partyCache.html && Date.now() - partyCache.ts < 90_000)
-    return res.send(partyCache.html);
-  const r = await eciGet('partywiseresult-S25.htm');
-  if (r.ok) partyCache = { html: r.text, ts: Date.now() };
-  partyCache.html ? res.send(partyCache.html) : res.status(500).send('ECI unavailable');
-});
+function parseECI(html) {
+  // Method 1: Find table with Won/Leading headers
+  const doc = html;
+  const tableMatch = doc.match(/<table[^>]*>([\s\S]*?)<\/table>/gi) || [];
 
-// ══════════════════════════════════════════
-// PARTY DETECTION
-// ══════════════════════════════════════════
-function detectParty(html) {
-  const t = html.toUpperCase();
-  const P = [
-    ['BHARATIYA JANATA PARTY', 'BJP'],
-    ['ALL INDIA TRINAMOOL CONGRESS', 'AITC'], ['TRINAMOOL CONGRESS', 'AITC'],
-    ['ALL INDIA SECULAR FRONT', 'AISF'],
-    ['BHARATIYA GORKHA PRAJATANTRIK', 'BGPM'],
-    ['AAM JANATA UNNAYAN PARTY', 'AJUP'],
-    ['BAHUJAN SAMAJ PARTY', 'BSP'],
-    ['REVOLUTIONARY SOCIALIST PARTY', 'RSP'],
-    ['COMMUNIST PARTY OF INDIA (MARXIST)', 'CPI(M)'], ['CPIM', 'CPI(M)'],
-    ['COMMUNIST PARTY OF INDIA', 'CPI'],
-    ['INDIAN NATIONAL CONGRESS', 'INC'],
-    [' BJP ', 'BJP'], ['"BJP"', 'BJP'], ['>BJP<', 'BJP'],
-    [' AITC ', 'AITC'], ['"AITC"', 'AITC'],
-    [' INC ', 'INC'], [' BSP ', 'BSP'], [' AISF ', 'AISF'], [' AJUP ', 'AJUP'],
-  ];
-  for (const kw of ['LEADING', 'WON']) {
-    let pos = 0;
-    while (pos < t.length) {
-      const idx = t.indexOf(kw, pos);
-      if (idx === -1) break;
-      const before = t.substring(Math.max(0, idx - 800), idx);
-      for (const [p, a] of P) if (before.includes(p)) return a;
-      pos = idx + 1;
+  for (const table of tableMatch) {
+    const rows = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+    if (!rows.length) continue;
+
+    const headerRow = rows[0].replace(/<[^>]+>/g, ' ').toLowerCase();
+    if (!headerRow.includes('won') || !headerRow.includes('leading')) continue;
+
+    const parties = [];
+    for (let i = 1; i < rows.length; i++) {
+      const cells = (rows[i].match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [])
+        .map(c => c.replace(/<[^>]+>/g, '').trim().replace(/&amp;/g, '&'));
+      if (cells.length < 4) continue;
+      const name = cells[0];
+      if (!name || name.toLowerCase() === 'total' || name.toLowerCase() === 'party') continue;
+      const won     = parseInt(cells[1]) || 0;
+      const leading = parseInt(cells[2]) || 0;
+      const total   = parseInt(cells[3].replace(/\D/g, '')) || 0;
+      if (total > 0) parties.push({ name, won, leading, total });
+    }
+    if (parties.length > 0) {
+      parties.sort((a, b) => b.total - a.total);
+      const ts = (html.match(/Last Updated at\s+([^\n<]+)/i) || [])[1] || '';
+      return {
+        parties,
+        total_declared: parties.reduce((s, p) => s + p.total, 0),
+        last_updated: ts.trim(),
+      };
     }
   }
-  for (const [p, a] of P) if (t.includes(p)) return a;
+
+  // Method 2: Parse the visual bar format (ECI uses divs with party/count)
+  // Pattern: <b>BJP</b>...<b>204</b> or similar
+  const parties = [];
+  const partyBlocks = html.match(/class="[^"]*party[^"]*"[\s\S]{0,500}?class="[^"]*count[^"]*"/gi) || [];
+
+  // Method 3: Direct regex on full HTML
+  // ECI format: PartyName\n\nNumber (in sequential blocks)
+  const knownParties = [
+    ['BJP', 'Bharatiya Janata Party'],
+    ['AITC', 'All India Trinamool Congress'],
+    ['INC', 'Indian National Congress'],
+    ['AJUP', 'Aam Janata Unnayan party'],
+    ['CPI(M)', 'Communist Party of India'],
+    ['AISF', 'All India Secular Front'],
+    ['BGPM', 'Bharatiya Gorkha Prajatantrik'],
+    ['BSP', 'Bahujan Samaj Party'],
+    ['RSP', 'Revolutionary Socialist'],
+  ];
+
+  for (const [abbr, nameKey] of knownParties) {
+    // Find the number after the party abbreviation in the HTML
+    const re = new RegExp(abbr + '[\\s\\S]{0,200}?<[^>]*>(\\d+)<\\/[^>]*>', 'i');
+    const m = html.match(re);
+    if (m) {
+      const total = parseInt(m[1]);
+      if (total > 0 && total < 294) parties.push({ name: nameKey + ' - ' + abbr, won: 0, leading: total, total });
+    }
+  }
+
+  if (parties.length > 0) {
+    parties.sort((a, b) => b.total - a.total);
+    return { parties, total_declared: parties.reduce((s, p) => s + p.total, 0), last_updated: '' };
+  }
+
   return null;
 }
 
 // ══════════════════════════════════════════
-// TEST: single constituency with session
-// Open: /api/consttest/001
+// ✅ /api/results — clean JSON (main endpoint)
 // ══════════════════════════════════════════
-app.get('/api/consttest/:id', async (req, res) => {
-  const id = req.params.id.padStart(3, '0');
-  const r = await eciGet(`statewiseS25${id}.htm`);
-  const party = r.ok ? detectParty(r.text) : null;
-  res.setHeader('Content-Type', 'text/plain');
-  res.send(
-    `Seat ${id}: status=${r.status} ok=${r.ok} party=${party}\n` +
-    `Cookie used: ${session.cookies || '(none)'}\n\n` +
-    `First 2000 chars:\n${r.text.slice(0, 2000)}`
-  );
-});
+let resultsCache = { data: null, ts: 0 };
 
-// ══════════════════════════════════════════
-// SEATMAP — session-based batch fetch
-// ══════════════════════════════════════════
-let smCache = { data: null, ts: 0 };
-
-app.get('/api/seatmap', async (req, res) => {
-  if (smCache.data && Date.now() - smCache.ts < 300_000) {
-    console.log('Cache hit:', smCache.data.count);
-    return res.json(smCache.data);
+app.get('/api/results', async (req, res) => {
+  if (resultsCache.data && Date.now() - resultsCache.ts < 60_000) {
+    return res.json(resultsCache.data);
   }
 
-  // Refresh session before batch fetch
-  await getSession();
-
-  const seatMap = {}, failed = [];
-  const ids = Array.from({ length: 294 }, (_, i) => (i + 1).toString().padStart(3, '0'));
-  const BATCH = 8;
-
-  for (let i = 0; i < ids.length; i += BATCH) {
-    await Promise.all(ids.slice(i, i + BATCH).map(async id => {
-      const r = await eciGet(`statewiseS25${id}.htm`);
-      if (r.ok) {
-        const p = detectParty(r.text);
-        if (p) seatMap[id] = p; else failed.push(id + '(OTH)');
-      } else {
-        failed.push(id + `(${r.status})`);
-      }
-    }));
-    await new Promise(r => setTimeout(r, 300));
-    console.log(`${Math.min(i + BATCH, 294)}/294 | mapped:${Object.keys(seatMap).length}`);
+  const html = await fetchECI('partywiseresult-S25.htm');
+  if (html) {
+    const parsed = parseECI(html);
+    if (parsed && parsed.parties.length > 0) {
+      resultsCache = { data: parsed, ts: Date.now() };
+      return res.json(parsed);
+    }
+    // Return raw HTML snippet for debugging
+    console.log('Parse failed, HTML snippet:', html.slice(0, 500));
   }
 
-  const out = {
-    seatMap,
-    count: Object.keys(seatMap).length,
-    failed: failed.slice(0, 20),
-    source: 'eci-session',
-  };
-  if (out.count > 0) smCache = { data: out, ts: Date.now() };
-  res.json(out);
+  // Return cached if available
+  if (resultsCache.data) return res.json(resultsCache.data);
+  res.status(500).json({ error: 'ECI unavailable' });
 });
 
-// Generic URL tester
-app.get('/api/try', async (req, res) => {
-  const url = req.query.url || (req.query.path ? ECI_BASE + req.query.path : null);
-  if (!url) return res.status(400).send('?url= required');
-  const r = await eciGet(url);
+// Legacy endpoint (keeps existing frontend working)
+app.get('/api/party', async (req, res) => {
+  const html = await fetchECI('partywiseresult-S25.htm');
+  if (html) res.send(html);
+  else res.status(500).send('ECI unavailable');
+});
+
+// Raw HTML for debugging
+app.get('/api/raw', async (req, res) => {
+  const html = await fetchECI('partywiseresult-S25.htm');
   res.setHeader('Content-Type', 'text/plain');
-  res.send(`${r.ok ? '✅' : '❌'} ${url}\nstatus=${r.status} cookie=${session.cookies || 'none'}\nlen=${r.text.length}\n\n${r.text.slice(0, 3000)}`);
+  res.send(html ? `len=${html.length}\n\n${html.slice(0, 5000)}` : 'failed');
 });
 
 const PORT = process.env.PORT || 3000;

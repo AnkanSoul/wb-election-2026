@@ -5,52 +5,50 @@ import fetch from 'node-fetch';
 const app = express();
 app.use(cors());
 
-const BASE = 'https://results.eci.gov.in/ResultAcGenMay2026/';
+// 🔥 Use proxy instead of direct ECI
+const PROXY = "https://api.allorigins.win/raw?url=";
+const BASE = "https://results.eci.gov.in/ResultAcGenMay2026/";
 
 // ✅ Health check
 app.get('/', (req, res) => {
   res.send('API is running 🚀');
 });
 
-// Party data
+// ✅ PARTY DATA
 app.get('/api/party', async (req, res) => {
   try {
-    const r = await fetch(BASE + 'partywiseresult-S25.htm', {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-        "Accept": "text/html,application/xhtml+xml",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://results.eci.gov.in/",
-        "Origin": "https://results.eci.gov.in"
-      }
-    });
+    const url = PROXY + encodeURIComponent(BASE + "partywiseresult-S25.htm");
+
+    const r = await fetch(url);
     const html = await r.text();
+
     res.send(html);
+
   } catch (e) {
-    console.error(e);
+    console.error("Party API error:", e);
     res.status(500).send('error');
   }
 });
 
-// Constituency data
+// ✅ CONSTITUENCY DATA
 app.get('/api/const/:id', async (req, res) => {
   try {
-    const r = await fetch(BASE + `statewiseS25${req.params.id}.htm`, {
-      headers: {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "text/html",
-        "Referer": "https://results.eci.gov.in/",
-        "Origin": "https://results.eci.gov.in"
-      }
-    });
+    const id = req.params.id.padStart(3, '0');
+
+    const url = PROXY + encodeURIComponent(BASE + `statewiseS25${id}.htm`);
+
+    const r = await fetch(url);
     const html = await r.text();
+
     res.send(html);
+
   } catch (e) {
-    console.error(e);
+    console.error("Const API error:", e);
     res.status(500).send('error');
   }
 });
 
+// 🔥 PORT FIX
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {

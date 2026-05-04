@@ -471,42 +471,37 @@ function parseConstPage(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const result = {};
 
-  // The main table has rows with 9 direct cells
-  // cells: [0]=name [1]=no [2]=leadCand [3]=leadParty [4]=trailCand [5]=trailParty [6]=margin [7]=round [8]=status
-  for (const tbl of doc.querySelectorAll('table')) {
-    let found = false;
-    for (const row of tbl.rows) {
-      const cells = row.cells;
-      if (cells.length < 3) continue;
+  const rows = doc.querySelectorAll("tr");
 
-      const constNo = cells[1]?.textContent?.trim();
-      if (!constNo || !/^\d{1,3}$/.test(constNo)) continue;
+  rows.forEach(row => {
+    const cells = row.querySelectorAll("td");
 
-      // Leading party cell text (cells[3])
-      const partyCell = cells.length > 3 ? cells[3].textContent : '';
+    if (cells.length < 4) return;
 
-      let abbr = 'TBD';
-      for (const [fullMatch, short] of [
-        ['Bharatiya Janata Party', 'BJP'],
-        ['Trinamool', 'AITC'],
-        ['Marxist', 'CPI(M)'],
-        ['Gorkha', 'BGPM'],
-        ['Unnayan', 'AJUP'],
-        ['Indian National Congress', 'INC'],
-        ['Bahujan', 'BSP'],
-        ['Revolutionary Socialist', 'RSP'],
-        ['Communist Party of India', 'CPI'],
-        ['Nationalist Congress', 'NCP'],
-        ['Forward Bloc', 'AIFB'],
-      ]) {
-        if (partyCell.includes(fullMatch)) { abbr = short; break; }
-      }
+    // 🔥 constituency number detect
+    const text = cells[1]?.textContent?.trim();
 
-      result[String(constNo).padStart(3, '0')] = abbr;
-      found = true;
-    }
-    if (found && Object.keys(result).length > 0) break;
-  }
+    if (!text || !/^\d{1,3}$/.test(text)) return;
+
+    const id = text.padStart(3, '0');
+
+    // 🔥 full row text (safe parsing)
+    const rowText = row.textContent.toUpperCase();
+
+    let party = "OTH";
+
+    if (rowText.includes("BHARATIYA JANATA")) party = "BJP";
+    else if (rowText.includes("TRINAMOOL")) party = "AITC";
+    else if (rowText.includes("MARXIST")) party = "CPI(M)";
+    else if (rowText.includes("CONGRESS")) party = "INC";
+    else if (rowText.includes("UNNAYAN")) party = "AJUP";
+    else if (rowText.includes("GORKHA")) party = "BGPM";
+    else if (rowText.includes("BAHUJAN")) party = "BSP";
+    else if (rowText.includes("COMMUNIST PARTY OF INDIA")) party = "CPI";
+
+    result[id] = party;
+  });
+
   return result;
 }
 

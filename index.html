@@ -529,11 +529,28 @@ async function fetchPartyTotals() {
   }
 }
 
+// 🔥 STEP 1: VALID IDS NIKALO
+async function getValidIds() {
+  const res = await fetch("https://wb-election-api.onrender.com/api/party");
+  const html = await res.text();
+
+  const matches = [...html.matchAll(/statewiseS25(\d{3})\.htm/g)];
+
+  const ids = matches.map(m => m[1]);
+
+  console.log("Valid IDs:", ids.length);
+
+  return ids;
+}
+
+// 🔥 STEP 2: CORRECT FETCH
 async function fetchAllConstituencies() {
   const seatMap = {};
 
-  for (let i = 1; i <= 294; i++) {
-    const id = i.toString().padStart(3, '0');
+  const ids = await getValidIds();
+
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i];
 
     try {
       const html = await fetch(`https://wb-election-api.onrender.com/api/const/${id}`)
@@ -542,13 +559,17 @@ async function fetchAllConstituencies() {
       const parsed = parseConstPage(html);
       Object.assign(seatMap, parsed);
 
-      // 🔥 LIVE UPDATE MAP (important)
-      if (i % 20 === 0) {
+      // 🔥 live update map
+      if (i % 10 === 0) {
         renderMap(seatMap);
       }
 
-    } catch {}
+    } catch (e) {
+      console.log("Skip:", id);
+    }
   }
+
+  console.log("Final seats:", Object.keys(seatMap).length);
 
   return seatMap;
 }

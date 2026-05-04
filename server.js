@@ -17,11 +17,11 @@ app.get('/api/party', async (req, res) => {
   try {
     const r = await fetch(BASE + 'partywiseresult-S25.htm', {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://results.eci.gov.in/',
-        'Connection': 'keep-alive'
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "text/html,application/xhtml+xml",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://results.eci.gov.in/",
+        "Origin": "https://results.eci.gov.in"
       }
     });
     const html = await r.text();
@@ -36,7 +36,12 @@ app.get('/api/party', async (req, res) => {
 app.get('/api/const/:id', async (req, res) => {
   try {
     const r = await fetch(BASE + `statewiseS25${req.params.id}.htm`, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "text/html",
+        "Referer": "https://results.eci.gov.in/",
+        "Origin": "https://results.eci.gov.in"
+      }
     });
     const html = await r.text();
     res.send(html);

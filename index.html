@@ -254,6 +254,7 @@ a{color:var(--blue);text-decoration:none}
     <div class="vc-lbl" style="text-align: center;">Designed & Developed by Ankan Chakraborty</div>
   </footer>
 </div>
+
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
@@ -263,7 +264,6 @@ a{color:var(--blue);text-decoration:none}
 let map;
 
 function renderMap(seatMap = {}) {
-
   if (map) map.remove();
 
   map = L.map('map').setView([23.5, 87.5], 7);
@@ -274,77 +274,47 @@ function renderMap(seatMap = {}) {
   fetch('./data/wb-ac.geojson')
     .then(res => res.json())
     .then(data => {
-
       const layer = L.geoJSON(data, {
-
         style: function(feature) {
-
           const acNo = String(feature.properties.AC_NO).padStart(3, '0');
-
           const party = seatMap[acNo];
-
-          // 🔥 IMPORTANT FIX
-          if (!party) {
-            return {
-              color: "#222",
-              weight: 1,
-              fillColor: "#1a1a1a",
-              fillOpacity: 0.4
-            };
+          if (!party || party === 'OTH') {
+            return { color: "#222", weight: 1, fillColor: "#1a1a1a", fillOpacity: 0.4 };
           }
-
           const color = PARTY_CLR[party] || "#888";
-
-          return {
-            color: "#000",
-            weight: 1,
-            fillColor: color,
-            fillOpacity: 0.85
-          };
+          return { color: "#000", weight: 1, fillColor: color, fillOpacity: 0.85 };
         },
-
         onEachFeature: function(feature, layer) {
           const acNo = String(feature.properties.AC_NO).padStart(3, '0');
           const name = feature.properties.AC_NAME || "Seat";
           const party = seatMap[acNo] || "Counting...";
-
-          layer.bindTooltip(
-            `<b>${name}</b><br>Seat: ${acNo}<br>Party: ${party}`
-          );
+          layer.bindTooltip(`<b>${name}</b><br>Seat: ${acNo}<br>Party: ${party}`);
         }
-
       }).addTo(map);
 
       map.fitBounds(layer.getBounds());
+      setTimeout(() => map.invalidateSize(), 300);
 
-      // 🔥 CRITICAL FIX (leaflet bug)
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 300);
-
+      const colored = Object.values(seatMap).filter(p => p && p !== 'OTH').length;
       document.getElementById('map-st').textContent =
         `✅ ${Object.keys(seatMap).length} seats mapped`;
-
     })
-    .catch(err => {
-      console.error("Map error:", err);
-    });
+    .catch(err => console.error("Map error:", err));
 }
 </script>
 
 <script>
 // ══════════════════════════════════════════
-//  PARTY LOGOS (SVG symbols)
+//  PARTY LOGOS
 // ══════════════════════════════════════════
 const LOGOS = {
-  BJP: `<img src="./assets/logos/bjp.png" style="width:100%;height:100%;object-fit:contain;">`,
-  AITC: `<img src="./assets/logos/aitc.png" style="width:100%;height:100%;object-fit:contain;">`,
-  'CPI(M)': `<img src="./assets/logos/cpim.png" style="width:100%;height:100%;object-fit:contain;">`,
-  BGPM: `<img src="./assets/logos/bgpm.webp" style="width:100%;height:100%;object-fit:contain;">`,
-  AJUP: `<img src="./assets/logos/ajup.png" style="width:100%;height:100%;object-fit:contain;">`,
-  INC: `<img src="./assets/logos/inc.png" style="width:100%;height:100%;object-fit:contain;">`,
-  AISF: `<img src="./assets/logos/aisf.png" style="width:100%;height:100%;object-fit:contain;">`,
-
+  BJP:    `<img src="./assets/logos/bjp.png"  style="width:100%;height:100%;object-fit:contain;">`,
+  AITC:   `<img src="./assets/logos/aitc.png" style="width:100%;height:100%;object-fit:contain;">`,
+  'CPI(M)':`<img src="./assets/logos/cpim.png" style="width:100%;height:100%;object-fit:contain;">`,
+  BGPM:   `<img src="./assets/logos/bgpm.webp"style="width:100%;height:100%;object-fit:contain;">`,
+  AJUP:   `<img src="./assets/logos/ajup.png" style="width:100%;height:100%;object-fit:contain;">`,
+  INC:    `<img src="./assets/logos/inc.png"  style="width:100%;height:100%;object-fit:contain;">`,
+  AISF:   `<img src="./assets/logos/aisf.png" style="width:100%;height:100%;object-fit:contain;">`,
 };
 
 // ══════════════════════════════════════════
@@ -353,7 +323,8 @@ const LOGOS = {
 const PARTY_CLR = {
   BJP:'#FF6600', AITC:'#1565C0', 'CPI(M)':'#B71C1C',
   BGPM:'#7B1FA2', AJUP:'#00695C', INC:'#0D47A1',
-  BSP:'#4A148C', RSP:'#C62828', CPI:'#D32F2F', NOTA:'#546E7A'
+  BSP:'#4A148C', RSP:'#C62828', CPI:'#D32F2F',
+  AISF:'#E91E63', GNLF:'#795548', NOTA:'#546E7A'
 };
 const CLR_POOL = ['#1976D2','#C2185B','#00796B','#E65100','#512DA8','#2E7D32','#0288D1','#795548'];
 
@@ -375,57 +346,6 @@ function getLogo(name, color, i) {
   return `<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="23" fill="${color}1a" stroke="${color}" stroke-width="2"/><text x="24" y="30" text-anchor="middle" font-size="13" font-weight="900" fill="${color}" font-family="system-ui">${ab}</text></svg>`;
 }
 
-// Normalize full party name → abbreviation
-function toAbbr(fullName) {
-  const n = (fullName||'').toUpperCase();
-  if (n.includes('BHARATIYA JANATA') || n === 'BJP') return 'BJP';
-  if (n.includes('TRINAMOOL') || n.includes('AITC')) return 'AITC';
-  if (n.includes('MARXIST') || n.includes('CPI(M)') || n.includes('CPIM')) return 'CPI(M)';
-  if (n.includes('GORKHA')) return 'BGPM';
-  if (n.includes('UNNAYAN') || n === 'AJUP') return 'AJUP';
-  if (n.includes('INDIAN NATIONAL CONGRESS') || n === 'INC') return 'INC';
-  if (n.includes('BAHUJAN') || n === 'BSP') return 'BSP';
-  if (n.includes('REVOLUTIONARY SOCIALIST') || n === 'RSP') return 'RSP';
-  if (n.includes('COMMUNIST PARTY OF INDIA') && !n.includes('MARXIST')) return 'CPI';
-  return null;
-}
-
-// ══════════════════════════════════════════
-//  CORS PROXY FETCH
-// ══════════════════════════════════════════
-function makeAttempt(fetchPromise, timeoutMs) {
-  const t = new Promise((_, rj) => setTimeout(() => rj(new Error('timeout')), timeoutMs));
-  return Promise.race([fetchPromise, t]);
-}
-
-async function proxyFetch(url, timeoutMs = 12000) {
-  const enc = encodeURIComponent(url);
-
-  const proxies = [
-    `https://corsproxy.io/?${enc}`,   // BEST (India me fast)
-    `https://api.codetabs.com/v1/proxy?quest=${enc}`,
-    `https://thingproxy.freeboard.io/fetch/${url}`
-  ];
-
-  for (let p of proxies) {
-    try {
-      const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), timeoutMs);
-
-      const res = await fetch(p, { signal: ctrl.signal });
-
-      if (res.ok) {
-        const text = await res.text();
-        if (text && text.length > 200) return text;
-      }
-    } catch (e) {
-      console.warn("Proxy failed:", p);
-    }
-  }
-
-  throw new Error("All proxies failed");
-}
-
 // ══════════════════════════════════════════
 //  PARSE PARTY TOTALS PAGE
 // ══════════════════════════════════════════
@@ -440,13 +360,13 @@ function parsePartyPage(html) {
     if (!hdrTxt.toLowerCase().includes('won') || !hdrTxt.toLowerCase().includes('leading')) continue;
 
     for (let i = 1; i < rows.length; i++) {
-      const cells = rows[i].cells; // direct cells only
+      const cells = rows[i].cells;
       if (cells.length < 4) continue;
       const name = cells[0].textContent.trim();
       if (!name || name.toLowerCase() === 'total' || name.toLowerCase() === 'party') continue;
-      const won = parseInt(cells[1].textContent) || 0;
+      const won     = parseInt(cells[1].textContent) || 0;
       const leading = parseInt(cells[2].textContent) || 0;
-      const total = parseInt(cells[3].textContent.replace(/\D/g,'')) || 0;
+      const total   = parseInt(cells[3].textContent.replace(/\D/g,'')) || 0;
       if (total > 0) parties.push({ name, won, leading, total });
     }
     if (parties.length) break;
@@ -454,7 +374,6 @@ function parsePartyPage(html) {
 
   const bodyTxt = doc.body?.textContent || '';
   const ts = (bodyTxt.match(/Last Updated at\s+(.+)/i) || [])[1] || '';
-
   const sorted = parties.sort((a, b) => b.total - a.total);
   return {
     parties: sorted,
@@ -465,95 +384,56 @@ function parsePartyPage(html) {
 }
 
 // ══════════════════════════════════════════
-//  PARSE CONSTITUENCY PAGE → {no: party}
+//  FETCH PARTY TOTALS
 // ══════════════════════════════════════════
-function parseConstPage(html) {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const result = {};
-
-  const rows = doc.querySelectorAll("tr");
-
-  rows.forEach(row => {
-    const cells = row.querySelectorAll("td");
-
-    if (cells.length < 4) return;
-
-    // 🔥 constituency number detect
-    const text = cells[1]?.textContent?.trim();
-
-    if (!text || !/^\d{1,3}$/.test(text)) return;
-
-    const id = text.padStart(3, '0');
-
-    // 🔥 full row text (safe parsing)
-    const rowText = row.textContent.toUpperCase();
-
-    let party = "OTH";
-
-    if (rowText.includes("BHARATIYA JANATA")) party = "BJP";
-    else if (rowText.includes("TRINAMOOL")) party = "AITC";
-    else if (rowText.includes("MARXIST")) party = "CPI(M)";
-    else if (rowText.includes("CONGRESS")) party = "INC";
-    else if (rowText.includes("UNNAYAN")) party = "AJUP";
-    else if (rowText.includes("GORKHA")) party = "BGPM";
-    else if (rowText.includes("BAHUJAN")) party = "BSP";
-    else if (rowText.includes("COMMUNIST PARTY OF INDIA")) party = "CPI";
-
-    result[id] = party;
-  });
-
-  return result;
-}
-
-// ══════════════════════════════════════════
-//  FETCH ALL DATA
-// ══════════════════════════════════════════
-const BASE = 'https://results.eci.gov.in/ResultAcGenMay2026/';
-
 async function fetchPartyTotals() {
-  try {
-    const res = await fetch("https://wb-election-api.onrender.com/api/party");
-
-    const html = await res.text();
-
-    return parsePartyPage(html);
-
-  } catch (e) {
-    console.error("API error:", e);
-    throw e;
-  }
-}
-
-// 🔥 STEP 1: VALID IDS NIKALO
-async function getValidIds() {
   const res = await fetch("https://wb-election-api.onrender.com/api/party");
   const html = await res.text();
-
-  const matches = [...html.matchAll(/statewiseS25(\d{3})\.htm/g)];
-
-  const ids = matches.map(m => m[1]);
-
-  console.log("Valid IDs:", ids.length);
-
-  return ids;
+  return parsePartyPage(html);
 }
 
+// ══════════════════════════════════════════
+//  FETCH SEATMAP — ✅ FIX 1: frontend cache
+//  Sirf ek baar fetch karo, 5 min cache
+// ══════════════════════════════════════════
+let _seatMapCache = null;
+let _seatMapTs    = 0;
+let _seatMapFetching = false;
+
 async function fetchAllConstituencies() {
-  document.getElementById('map-st').textContent =
-    '⏳ Server se seat data aa raha hai...';
- 
-  const res = await fetch('https://wb-election-api.onrender.com/api/seatmap');
- 
-  if (!res.ok) throw new Error('seatmap fetch failed: ' + res.status);
- 
-  const data = await res.json();
-  const seatMap = data.seatMap || {};
-  const count   = data.count   || Object.keys(seatMap).length;
- 
-  document.getElementById('map-st').textContent =
-    `✅ ${count} seats mapped (server se)`;
- 
-  return seatMap;
+  // ✅ Already cached? Re-use karo — map dobara reload mat karo
+  if (_seatMapCache && Date.now() - _seatMapTs < 5 * 60 * 1000) {
+    console.log('✅ SeatMap frontend cache hit');
+    return _seatMapCache;
+  }
+
+  // ✅ Already fetching? Wait mat karo — skip
+  if (_seatMapFetching) {
+    console.log('⏳ SeatMap already fetching, skip');
+    return _seatMapCache || {};
+  }
+
+  _seatMapFetching = true;
+  document.getElementById('map-st').textContent = '⏳ Server se seat data aa raha hai...';
+
+  try {
+    const res = await fetch('https://wb-election-api.onrender.com/api/seatmap');
+    if (!res.ok) throw new Error('seatmap fetch failed: ' + res.status);
+
+    const data    = await res.json();
+    const seatMap = data.seatMap || {};
+    const count   = data.count   || Object.keys(seatMap).length;
+
+    _seatMapCache    = seatMap;
+    _seatMapTs       = Date.now();
+    _seatMapFetching = false;
+
+    document.getElementById('map-st').textContent = `✅ ${count} seats mapped`;
+    return seatMap;
+  } catch (e) {
+    _seatMapFetching = false;
+    throw e;
+  }
 }
 
 // ══════════════════════════════════════════
@@ -572,11 +452,11 @@ function render(d) {
   document.getElementById('ftr-upd').textContent = 'Last updated: ' + (LU || new Date().toLocaleTimeString('en-IN'));
 
   if (ldr) {
-    const c = getClr(ldr.name);
+    const c   = getClr(ldr.name);
     const pct = Math.min(100, (ldr.total / TS) * 100);
     const fill = document.getElementById('maj-fill');
     fill.style.background = `linear-gradient(90deg, ${c}99, ${c})`;
-    fill.style.boxShadow = `0 0 18px ${c}40`;
+    fill.style.boxShadow  = `0 0 18px ${c}40`;
     document.getElementById('maj-ldr').textContent =
       `${getAbbr(ldr.name)} — ${ldr.total} seats | ${ldr.total >= 148 ? '✅ Bahumat Hasi!' : '⚠️ Bahumat se ' + (148 - ldr.total) + ' door'}`;
     setTimeout(() => {
@@ -649,20 +529,20 @@ function render(d) {
 }
 
 // ══════════════════════════════════════════
-//  FALLBACK DATA  (ECI se — 04/05/2026 12:15 PM)
+//  FALLBACK DATA
 // ══════════════════════════════════════════
 function getFallback() {
   return {
     parties: [
-      { name: 'Bharatiya Janata Party - BJP',              won: 0, leading: 169, total: 169 },
-      { name: 'All India Trinamool Congress - AITC',        won: 0, leading: 91,  total: 91  },
+      { name: 'Bharatiya Janata Party - BJP',               won: 0, leading: 169, total: 169 },
+      { name: 'All India Trinamool Congress - AITC',         won: 0, leading: 91,  total: 91  },
       { name: 'Bharatiya Gorkha Prajatantrik Morcha - BGPM',won: 0, leading: 1,   total: 1   },
-      { name: 'Aam Janata Unnayan party - AJUP',            won: 0, leading: 1,   total: 1   },
-      { name: 'Communist Party of India (Marxist) - CPIM',won: 0, leading: 1,   total: 1   },
-      { name: 'All India Secular Front - AISF',             won: 0, leading: 1,   total: 1   },
+      { name: 'Aam Janata Unnayan party - AJUP',             won: 0, leading: 1,   total: 1   },
+      { name: 'Communist Party of India (Marxist) - CPIM',  won: 0, leading: 1,   total: 1   },
+      { name: 'All India Secular Front - AISF',              won: 0, leading: 1,   total: 1   },
     ],
     total_seats: 294, total_declared: 264,
-    last_updated: 'ECI data — 04/05/2026 12:15 PM (auto-refresh try ho raha hai)'
+    last_updated: 'ECI data — 04/05/2026 (auto-refresh try ho raha hai)'
   };
 }
 
@@ -697,17 +577,17 @@ function manualRefresh() {
 
 // ══════════════════════════════════════════
 //  MAIN LOAD
+//  ✅ FIX 2: Map sirf pehli baar fetch+render
+//  Auto-refresh pe sirf party data update hoga
 // ══════════════════════════════════════════
+let mapLoaded = false;  // ← track if map fetched once
+
 async function loadData(showLoad = true) {
   if (isFetching) { startTimer(); return; }
   isFetching = true;
 
-  // Step 1: Always show app immediately with fallback — never block on spinner
   if (showLoad) {
     render(getFallback());
-
-    // ✅ FIXED
-    // renderMap({});
     document.getElementById('map-st').textContent = '⏳ Map loading...';
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').style.display = 'block';
@@ -719,35 +599,37 @@ async function loadData(showLoad = true) {
 
   startTimer();
 
-  // Step 2: Try to fetch live data in background
+  // Party data refresh (har 60s)
   try {
     const liveTimeout = new Promise((_, rj) =>
       setTimeout(() => rj(new Error('Live data timeout')), 14000)
     );
     const partyData = await Promise.race([fetchPartyTotals(), liveTimeout]);
-    render(partyData);  // Update UI with real data if fetch succeeds
+    render(partyData);
     isFetching = false;
 
-    // Step 3: Fetch constituency map in background
-    document.getElementById('map-st').textContent = 'Constituency data fetch ho raha hai...';
-    setTimeout(() => {
-      fetchAllConstituencies()
-        .then(seatMap => renderMap(seatMap))
-        .catch(() => {
-          document.getElementById('map-st').textContent =
-            'District view dikh raha hai — constituency data unavailable';
-        });
-    }, 2000);
+    // ✅ Seatmap + map: sirf pehli baar fetch karo
+    if (!mapLoaded) {
+      mapLoaded = true;
+      setTimeout(() => {
+        fetchAllConstituencies()
+          .then(seatMap => renderMap(seatMap))
+          .catch(() => {
+            document.getElementById('map-st').textContent =
+              'Seat data unavailable — auto-retry next refresh';
+            mapLoaded = false; // retry next time
+          });
+      }, 2000);
+    }
 
   } catch (e) {
-    // Fallback already rendered in Step 1 — just show a soft error
-    showErr('Live data nahi aaya (' + e.message + ') — Cached data dikh raha hai, auto-refresh try karega.');
+    showErr('Live data nahi aaya (' + e.message + ') — Cached data dikh raha hai.');
     isFetching = false;
   }
 }
 
 // ══════════════════════════════════════════
-//  VISIT COUNTER  (countapi.xyz band ho gaya; localStorage use karo)
+//  VISIT COUNTER
 // ══════════════════════════════════════════
 function trackVisit() {
   const k = 'wb26_vc';

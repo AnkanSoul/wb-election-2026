@@ -507,7 +507,28 @@ async function fetchPartyTotals() {
 }
 
 async function fetchAllConstituencies() {
-  return {};
+  try {
+    const res = await fetch('./data/wb-ac.geojson');
+    const data = await res.json();
+
+    const seatMap = {};
+
+    // 🔥 Random demo distribution (visual working ke liye)
+    data.features.forEach((f, i) => {
+      const acNo = f.properties.AC_NO;
+
+      if (i % 5 === 0) seatMap[acNo] = "AITC";
+      else if (i % 7 === 0) seatMap[acNo] = "CPI(M)";
+      else if (i % 9 === 0) seatMap[acNo] = "INC";
+      else seatMap[acNo] = "BJP";
+    });
+
+    return seatMap;
+
+  } catch (e) {
+    console.error("Seat map load failed", e);
+    return {};
+  }
 }
 
 // ══════════════════════════════════════════

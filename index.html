@@ -281,7 +281,7 @@ function renderMap(seatMap = {}) {
 
         style: function(feature) {
 
-          const acNo = feature.properties.AC_NO;
+          const acNo = String(feature.properties.AC_NO).padStart(3, '0');
 
           const party = seatMap[acNo] || "OTH";
 
@@ -296,7 +296,7 @@ function renderMap(seatMap = {}) {
         },
 
         onEachFeature: function(feature, layer) {
-          const acNo = feature.properties.AC_NO;
+          const acNo = String(feature.properties.AC_NO).padStart(3, '0');
           const name = feature.properties.AC_NAME || "Seat";
           const party = seatMap[acNo] || "TBD";
 
@@ -489,7 +489,7 @@ function parseConstPage(html) {
         if (partyCell.includes(fullMatch)) { abbr = short; break; }
       }
 
-      result[constNo] = abbr;
+      result[String(constNo).padStart(3, '0')] = abbr;
       found = true;
     }
     if (found && Object.keys(result).length > 0) break;
@@ -537,7 +537,15 @@ async function fetchAllConstituencies() {
       );
     }
 
-    await Promise.all(promises);
+    for (let i = 1; i <= 294; i++) {
+      const id = i.toString().padStart(3, '0');
+    
+      try {
+        const html = await fetch(`https://wb-election-api.onrender.com/api/const/${id}`).then(r => r.text());
+        const parsed = parseConstPage(html);
+        Object.assign(seatMap, parsed);
+      } catch {}
+    }
 
     return seatMap;
 
@@ -698,7 +706,8 @@ async function loadData(showLoad = true) {
     render(getFallback());
 
     // ✅ FIXED
-    renderMap({});
+    // renderMap({});
+    document.getElementById('map-st').textContent = '⏳ Map loading...';
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').style.display = 'block';
 

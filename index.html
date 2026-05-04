@@ -559,7 +559,7 @@ async function fetchAllConstituencies() {
       Object.assign(seatMap, parsed);
 
       // 🔥 live map update
-      if (i % 10 === 0) {
+      if (i % 5 === 0) {
         renderMap(seatMap);
       }
 

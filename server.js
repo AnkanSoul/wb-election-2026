@@ -9,93 +9,92 @@ const BASE = 'https://results.eci.gov.in/ResultAcGenMay2026/';
 
 app.get('/', (req, res) => res.send('API is running 🚀'));
 
-const HEADERS = {
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36",
-  "Accept": "text/html,application/xhtml+xml,*/*;q=0.8",
-  "Accept-Language": "en-US,en;q=0.9",
-  "Referer": "https://results.eci.gov.in/ResultAcGenMay2026/index.htm",
-  "Connection": "keep-alive"
-};
+// Rotate User-Agents to avoid ECI blocking
+const UAS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0',
+];
+let uaIdx = 0;
+function nextUA() { return UAS[uaIdx++ % UAS.length]; }
 
-async function fetchPage(url, hdrs = HEADERS, retries = 3) {
+async function fetchECI(path, retries = 3) {
+  const url = BASE + path;
   for (let i = 0; i < retries; i++) {
     try {
-      const res = await fetch(url, { headers: hdrs });
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': nextUA(),
+          'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+          'Accept-Language': 'en-IN,en;q=0.9',
+          'Referer': 'https://results.eci.gov.in/',
+          'Cache-Control': 'no-cache',
+        }
+      });
       const text = await res.text();
-      console.log(`[FETCH] ${url.slice(-50)} → ${res.status} len=${text.length}`);
-      if (res.status === 200 && text.length > 100) return { ok: true, text, status: res.status };
-      throw new Error(`bad response: status=${res.status} len=${text.length}`);
+      console.log(`[${path}] status=${res.status} len=${text.length}`);
+      if (res.status === 200 && text.length > 300) return text;
+      throw new Error(`status=${res.status} len=${text.length}`);
     } catch (e) {
-      console.log(`  retry ${i+1}: ${e.message}`);
-      await new Promise(r => setTimeout(r, 1200 * (i + 1)));
+      console.warn(`  retry ${i+1}: ${e.message}`);
+      await new Promise(r => setTimeout(r, 2000 * (i + 1)));
     }
   }
-  return { ok: false, text: '', status: 0 };
+  return null;
 }
 
-// ✅ PARTY DATA
+// ✅ Party data (cached 90s)
+let partyCache = { html: null, ts: 0 };
 app.get('/api/party', async (req, res) => {
-  const r = await fetchPage(BASE + 'partywiseresult-S25.htm');
-  if (r.ok) res.send(r.text);
-  else res.status(500).send('Failed');
+  if (partyCache.html && Date.now() - partyCache.ts < 90_000) {
+    return res.send(partyCache.html);
+  }
+  const html = await fetchECI('partywiseresult-S25.htm');
+  if (html) {
+    partyCache = { html, ts: Date.now() };
+    res.send(html);
+  } else {
+    // Return cached if available, else 500
+    if (partyCache.html) res.send(partyCache.html);
+    else res.status(500).send('ECI temporarily unavailable');
+  }
 });
 
-// ══════════════════════════════════════════
-// 🔍 ANALYZE PARTY PAGE
-// Extracts: all JS content, all links, all data-* attrs
-// → Find where constituency data comes from
-// Open: /api/analyze
-// ══════════════════════════════════════════
-app.get('/api/analyze', async (req, res) => {
-  const r = await fetchPage(BASE + 'partywiseresult-S25.htm');
-  if (!r.ok) return res.status(500).send('Cannot fetch party page');
+// ✅ Single constituency (for browser fallback)
+app.get('/api/const/:id', async (req, res) => {
+  const id = req.params.id.padStart(3, '0');
+  const html = await fetchECI(`statewiseS25${id}.htm`);
+  if (html) res.send(html);
+  else res.status(503).send('unavailable');
+});
 
-  const html = r.text;
+// ✅ Seatmap - fetch slowly, one at a time to avoid IP block
+let seatmapCache = { data: null, ts: 0 };
 
-  // 1. All hrefs
-  const hrefs = [...html.matchAll(/href=["']([^"'#]{3,})["']/gi)].map(m => m[1]);
-
-  // 2. All script src
-  const scripts = [...html.matchAll(/src=["']([^"']+)["']/gi)].map(m => m[1]);
-
-  // 3. All fetch/ajax/json URLs in inline scripts
-  const inlineScripts = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(m => m[1]);
-  const apiUrls = [];
-  for (const s of inlineScripts) {
-    const matches = [...s.matchAll(/["'`](https?:\/\/[^"'`\s]+|\/[^"'`\s]+\.(?:json|htm|html|php|asp|js))["'`]/g)];
-    matches.forEach(m => apiUrls.push(m[1]));
+app.get('/api/seatmap', async (req, res) => {
+  if (seatmapCache.data && Date.now() - seatmapCache.ts < 300_000) {
+    return res.json(seatmapCache.data);
   }
 
-  // 4. JSON-like data in scripts (look for arrays with seat data)
-  const jsonChunks = [];
-  for (const s of inlineScripts) {
-    if (s.includes('var ') || s.includes('const ') || s.includes('let ') || s.includes('[{')) {
-      jsonChunks.push(s.slice(0, 500));
+  const seatMap = {}, failed = [];
+  const ids = Array.from({ length: 294 }, (_, i) => (i + 1).toString().padStart(3, '0'));
+
+  // Sequential with delay — avoids IP block
+  for (const id of ids) {
+    const html = await fetchECI(`statewiseS25${id}.htm`, 1);
+    if (html) {
+      seatMap[id] = detectParty(html);
+    } else {
+      failed.push(id);
     }
+    await new Promise(r => setTimeout(r, 200)); // 200ms between requests
   }
 
-  // 5. All form actions
-  const forms = [...html.matchAll(/action=["']([^"']+)["']/gi)].map(m => m[1]);
-
-  // 6. Look for constituency number patterns
-  const constNums = [...new Set([...html.matchAll(/S25(\d{3})/g)].map(m => m[1]))];
-
-  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-  res.send(
-    `=== PARTY PAGE ANALYSIS (html len=${html.length}) ===\n\n` +
-    `--- HREFS (${hrefs.length}) ---\n` + hrefs.join('\n') +
-    `\n\n--- SCRIPT SRCS (${scripts.length}) ---\n` + scripts.join('\n') +
-    `\n\n--- API URLS IN SCRIPTS (${apiUrls.length}) ---\n` + apiUrls.join('\n') +
-    `\n\n--- FORM ACTIONS ---\n` + forms.join('\n') +
-    `\n\n--- CONSTITUENCY NUMBERS IN HTML ---\n` + constNums.join(', ') +
-    `\n\n--- INLINE SCRIPT CHUNKS (${jsonChunks.length}) ---\n` + jsonChunks.join('\n---\n') +
-    `\n\n=== FULL HTML ===\n` + html
-  );
+  const out = { seatMap, count: Object.keys(seatMap).length, errors: failed.length };
+  if (out.count > 0) seatmapCache = { data: out, ts: Date.now() };
+  res.json(out);
 });
 
-// ══════════════════════════════════════════
-// 🔥 PARTY DETECTION
-// ══════════════════════════════════════════
 function detectParty(html) {
   const t = html.toUpperCase();
   const patterns = [
@@ -111,11 +110,10 @@ function detectParty(html) {
     ['CPIM', 'CPI(M)'],
     ['COMMUNIST PARTY OF INDIA', 'CPI'],
     ['INDIAN NATIONAL CONGRESS', 'INC'],
-    [' BJP ',  'BJP'], ['>BJP<',  'BJP'],
-    [' AITC ', 'AITC'],['>AITC<', 'AITC'],
-    [' INC ',  'INC'], ['>INC<',  'INC'],
-    [' BSP ',  'BSP'], [' AISF ', 'AISF'],
-    [' AJUP ', 'AJUP'],[' BGPM ', 'BGPM'],
+    [' BJP ', 'BJP'], ['>BJP<', 'BJP'],
+    [' AITC ', 'AITC'], ['>AITC<', 'AITC'],
+    [' INC ', 'INC'], [' BSP ', 'BSP'],
+    [' AISF ', 'AISF'], [' AJUP ', 'AJUP'],
   ];
   for (const kw of ['LEADING', 'WON']) {
     let pos = 0;
@@ -130,31 +128,6 @@ function detectParty(html) {
   for (const [pat, abbr] of patterns) if (t.includes(pat)) return abbr;
   return 'OTH';
 }
-
-// ✅ SEATMAP
-let seatmapCache = { data: null, ts: 0 };
-
-app.get('/api/seatmap', async (req, res) => {
-  if (seatmapCache.data && Date.now() - seatmapCache.ts < 180_000) {
-    return res.json(seatmapCache.data);
-  }
-  const seatMap = {}, failed = [], othList = [];
-  const ids = Array.from({ length: 294 }, (_, i) => (i + 1).toString().padStart(3, '0'));
-  for (let i = 0; i < ids.length; i += 10) {
-    await Promise.all(ids.slice(i, i + 10).map(async id => {
-      const r = await fetchPage(BASE + `statewiseS25${id}.htm`, HEADERS, 2);
-      if (r.ok) {
-        const party = detectParty(r.text);
-        seatMap[id] = party;
-        if (party === 'OTH') othList.push(id);
-      } else failed.push(id);
-    }));
-    await new Promise(r => setTimeout(r, 400));
-  }
-  const out = { seatMap, count: Object.keys(seatMap).length, errors: failed.length, othCount: othList.length, failSample: failed.slice(0, 10) };
-  seatmapCache = { data: out, ts: Date.now() };
-  res.json(out);
-});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🔥 API running on port ${PORT}`));

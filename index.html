@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WB Election 2026 Live Results</title>
+<meta name="description" content="Live West Bengal Election Results with Map">
+<link rel='shortcut icon' href='./assets/logos/favicon.ico' type="image/x-icon">
+<link rel="icon" href="data:,">
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#040c1e;--card:#091828;--card2:#0d2040;
+  --b1:rgba(70,120,255,.1);--b2:rgba(70,120,255,.22);
+  --t1:#ddeaff;--t2:#7a9ec8;--t3:#3a5872;
+  --green:#10b981;--blue:#3b82f6;--red:#ef4444;--saffron:#FF6600
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--t1);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+a{color:var(--blue);text-decoration:none}
+
+/* LOADING */
+#loading{position:fixed;inset:0;background:var(--bg);z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.ld-ring{width:50px;height:50px;border:3px solid var(--b2);border-top-color:#4a7ae2;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ld-t{font-size:15px;color:var(--t2)}.ld-s{font-size:12px;color:var(--t3);text-align:center;padding:0 20px}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#070e2a 0%,#0e1f5a 55%,#070e2a 100%);border-bottom:1px solid rgba(70,120,255,.14);position:sticky;top:0;z-index:999999}
+.hdr-i{max-width:1200px;margin:0 auto;padding:15px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.hdr-tag{font-size:10px;text-transform:uppercase;letter-spacing:2.5px;color:#4a6a9a;font-weight:700;margin-bottom:3px}
+.hdr-title{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.4px}
+.hdr-title em{color:var(--saffron);font-style:normal}
+.hdr-sub{font-size:11px;color:#405a82;margin-top:2px}
+.hdr-r{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.live-p{display:inline-flex;align-items:center;gap:5px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#fca5a5;font-size:10px;font-weight:700;padding:4px 11px;border-radius:20px;letter-spacing:2px;text-transform:uppercase}
+.live-d{width:7px;height:7px;background:var(--red);border-radius:50%;animation:blink 1.4s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.2;transform:scale(.6)}}
+.rf-row{display:flex;align-items:center;gap:8px}
+.rf-info{font-size:11px;color:var(--t3)}.cd{color:#5a9af2;font-weight:700}
+.rf-btn{background:rgba(70,120,255,.1);border:1px solid rgba(70,120,255,.25);color:#6aaaf8;font-size:11px;font-weight:600;padding:4px 12px;border-radius:6px;cursor:pointer;transition:background .2s}
+.rf-btn:hover{background:rgba(70,120,255,.22)}
+
+/* MAIN */
+.main{max-width:1200px;margin:0 auto;padding:18px 18px 30px}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--b1);border-radius:10px;padding:12px 15px}
+.sl{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--t3);font-weight:700}
+.sv{font-size:22px;font-weight:900;color:var(--t1);letter-spacing:-.8px;line-height:1;margin-top:4px}
+.ss{font-size:11px;color:var(--t2);margin-top:3px}
+
+/* MAJORITY */
+.maj{background:var(--card);border:1px solid var(--b1);border-radius:12px;padding:15px 20px;margin-bottom:16px}
+.maj-hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.maj-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3)}
+.maj-ldr{font-size:13px;font-weight:700;color:var(--t1)}
+.maj-track{position:relative;height:22px;background:rgba(255,255,255,.05);border-radius:11px;overflow:hidden}
+.maj-fill{height:100%;border-radius:11px 0 0 11px;transition:width 1.4s cubic-bezier(.25,.46,.45,.94);display:flex;align-items:center;justify-content:flex-end;padding-right:8px}
+.maj-ft{font-size:11px;font-weight:800;color:rgba(255,255,255,.92)}
+.maj-mk{position:absolute;top:0;bottom:0;left:50.34%;width:2px;background:rgba(255,255,255,.3)}
+.maj-mk::after{content:'148';position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,.45);font-weight:700}
+.maj-ax{display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:var(--t3)}
+
+/* TWO COL */
+.cols{display:grid;grid-template-columns:1fr 290px;gap:16px;margin-bottom:16px;align-items:start}
+
+/* PARTY CARDS */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:10px;margin-bottom:16px}
+.pc{background:var(--card);border:1px solid var(--b1);border-radius:11px;padding:13px 12px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
+.pc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--c)}
+.pc:hover{transform:translateY(-2px);border-color:var(--b2)}
+.pc-logo{width:42px;height:42px;margin-bottom:8px}
+.pc-logo svg{width:100%;height:100%}
+.pc-ab{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--c);margin-bottom:2px}
+.pc-fn{font-size:10px;color:var(--t3);margin-bottom:7px;line-height:1.3}
+.pc-n{font-size:36px;font-weight:900;color:#fff;line-height:1;letter-spacing:-2px}
+.pc-bk{font-size:11px;color:var(--t2);margin-top:4px}
+.pc-bk b{color:var(--t1)}
+.pc-bar{height:3px;background:rgba(255,255,255,.07);border-radius:2px;margin-top:10px;overflow:hidden}
+.pc-bf{height:100%;background:var(--c);border-radius:2px;width:0;transition:width 1.2s ease}
+
+/* MAP */
+.map-card{background:var(--card);border:1px solid var(--b1);border-radius:12px;overflow:hidden}
+.map-hd{padding:11px 15px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center}
+.map-body{padding:10px;min-height:200px;display:flex;align-items:center;justify-content:center}
+#wb-map{width:100%}
+#wb-map svg{display:block;margin:0 auto}
+.map-leg{padding:8px 12px;border-top:1px solid var(--b1);display:flex;flex-wrap:wrap;gap:7px}
+.ml-i{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t2)}
+.ml-d{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.map-st{padding:7px 12px;font-size:11px;color:var(--t3);border-top:1px solid var(--b1);text-align:center;line-height:1.4}
+.map-loading{color:var(--t3);font-size:13px;text-align:center;padding:20px}
+
+/* DIST */
+.dist{background:var(--card);border:1px solid var(--b1);border-radius:12px;padding:15px 20px;margin-bottom:16px}
+.dist-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);margin-bottom:11px}
+.dist-bar{height:28px;border-radius:8px;overflow:hidden;display:flex;margin-bottom:10px}
+.db-s{height:100%;transition:width 1.2s ease;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:rgba(255,255,255,.9);overflow:hidden;white-space:nowrap;min-width:0}
+.dist-leg{display:flex;flex-wrap:wrap;gap:12px}
+.dl-i{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t2)}
+.dl-d{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* TABLE */
+.tbl-card{background:var(--card);border:1px solid var(--b1);border-radius:12px;overflow:hidden;margin-bottom:16px}
+.tbl-ttl{padding:12px 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);border-bottom:1px solid var(--b1)}
+.tbl-h{display:grid;grid-template-columns:1fr 70px 82px 70px;padding:8px 20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.04)}
+.tbl-r{display:grid;grid-template-columns:1fr 70px 82px 70px;padding:11px 20px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;transition:background .15s}
+.tbl-r:hover{background:rgba(255,255,255,.03)}
+.tbl-r:last-child{border-bottom:none}
+.tbl-p{display:flex;align-items:center;gap:9px}
+.tbl-lw{width:32px;height:32px;border-radius:7px;flex-shrink:0;background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.tbl-lw svg{width:28px;height:28px}
+.tbl-ab{font-size:13px;font-weight:700}
+.tbl-fn{font-size:10px;color:var(--t3);margin-top:1px}
+.tbl-w{text-align:center;font-size:15px;font-weight:800;color:#10b981}
+.tbl-l{text-align:center;font-size:15px;font-weight:800;color:#3b82f6}
+.tbl-t{text-align:center;font-size:17px;font-weight:900;color:var(--t1)}
+.tbl-tot{display:grid;grid-template-columns:1fr 70px 82px 70px;padding:11px 20px;background:rgba(70,120,255,.06);border-top:1px solid rgba(70,120,255,.14);font-size:13px;font-weight:700;color:var(--t2)}
+
+/* FOOTER */
+.ftr{background:var(--card);border-top:1px solid var(--b1);padding:18px 22px}
+.ftr-i{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+.ftr-s{font-size:12px;color:var(--t3)}.ftr-u{font-size:11px;color:var(--t3);margin-top:4px}
+.vc-box{display:flex;align-items:center;gap:11px;background:rgba(70,120,255,.07);border:1px solid rgba(70,120,255,.14);border-radius:12px;padding:11px 16px}
+.vc-ic{width:34px;height:34px;background:rgba(70,120,255,.14);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.vc-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1.2px;font-weight:700}
+.vc-n{font-size:24px;font-weight:900;color:var(--t1);letter-spacing:-1px;line-height:1.1}
+
+/* TOOLTIP */
+#tip{position:fixed;background:#091828;border:1px solid rgba(70,120,255,.35);border-radius:8px;padding:8px 12px;font-size:12px;color:#ddeaff;pointer-events:none;z-index:99;display:none;line-height:1.5;max-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.err-bar{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:#fca5a5;margin-bottom:14px;display:none}
+
+@media(max-width:860px){.cols{grid-template-columns:1fr}}
+@media(max-width:580px){
+  .hdr-i{padding:12px 14px}.hdr-title{font-size:17px}
+  .main{padding:12px 12px 22px}.pgrid{grid-template-columns:repeat(2,1fr)}
+  .tbl-h,.tbl-r,.tbl-tot{grid-template-columns:1fr 50px 64px 50px;padding:9px 12px}
+  .ftr-i{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<div id="tip"></div>
+
+<!-- LOADING -->
+<div id="loading">
+  <div class="ld-ring"></div>
+  <div class="ld-t" id="ld-msg">ECI se live data aa raha hai...</div>
+  <div class="ld-s">Election Commission of India — results.eci.gov.in se direct fetch</div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="app" style="display:none">
+
+  <header class="hdr">
+    <div class="hdr-i">
+      <div>
+        <div class="hdr-tag">Election Commission of India — West Bengal Vidhan Sabha</div>
+        <div class="hdr-title">Assembly Election <em>2026</em> — Live Results</div>
+        <div class="hdr-sub" id="hdr-sub">294 Total Seats &nbsp;|&nbsp; Majority: 148</div>
+      </div>
+      <div class="hdr-r">
+        <div class="live-p"><div class="live-d"></div>LIVE</div>
+        <div class="rf-row">
+          <div class="rf-info">Auto-refresh: <span class="cd" id="cd">60</span>s</div>
+          <button class="rf-btn" onclick="manualRefresh()">↻ Abhi Refresh</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="err-bar" id="err-bar"></div>
+
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat"><div class="sl">Ghoshit Seats</div><div class="sv" id="s-dec">—</div><div class="ss">out of 294 total</div></div>
+      <div class="stat"><div class="sl">Sabse Aage</div><div class="sv" id="s-ldr">—</div><div class="ss" id="s-ldr-s">seats</div></div>
+      <div class="stat"><div class="sl">Bahumat Zaruri</div><div class="sv" style="color:var(--saffron)">148</div><div class="ss">simple majority</div></div>
+      <div class="stat"><div class="sl">Last Updated</div><div class="sv" style="font-size:12px;padding-top:5px;line-height:1.4" id="s-upd">—</div><div class="ss">ECI official</div></div>
+    </div>
+
+    <!-- MAJORITY METER -->
+    <div class="maj">
+      <div class="maj-hd">
+        <div class="maj-ttl">Bahumat Meter — Sarkar Banane ke Liye 148 Seats Chahiye</div>
+        <div class="maj-ldr" id="maj-ldr">Loading...</div>
+      </div>
+      <div class="maj-track">
+        <div class="maj-mk"></div>
+        <div class="maj-fill" id="maj-fill" style="width:0%"><span class="maj-ft" id="maj-ft"></span></div>
+      </div>
+      <div class="maj-ax"><span>0</span><span style="color:rgba(255,255,255,.25);font-weight:600">← Bahumat rekha 148 →</span><span>294</span></div>
+    </div>
+
+    <!-- TWO COL: CARDS + MAP -->
+    <div class="cols">
+      <div>
+        <div class="pgrid" id="pgrid"></div>
+      </div>
+      <div class="map-card">
+        <div class="map-hd">
+          <span>West Bengal — Live Map</span>
+          <span id="map-cnt" style="font-size:10px;color:var(--t3)"></span>
+        </div>
+        <div class="map-body">
+          <div id="map" style="height:500px; width: 100%;"></div>
+        </div>
+        
+        <div class="map-leg" id="map-leg"></div>
+        <div class="map-st" id="map-st">Constituency data fetch ho raha hai...</div>
+      </div>
+    </div>
+
+    <!-- DIST -->
+    <div class="dist">
+      <div class="dist-ttl">Seat Distribution — <span id="dd">0</span> / 294 Ghoshit</div>
+      <div class="dist-bar" id="dist-bar"></div>
+      <div class="dist-leg" id="dist-leg"></div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="tbl-card">
+      <div class="tbl-ttl">Party-wise Vistar Results — Jeeta / Aage / Kul</div>
+      <div class="tbl-h"><div>Dal / Party</div><div style="text-align:center">Jeeta</div><div style="text-align:center">Aage Hai</div><div style="text-align:center">Kul</div></div>
+      <div id="tbl-body"></div>
+      <div class="tbl-tot" id="tbl-tot" style="display:none">
+        <div>Kul Yog</div>
+        <div id="tot-w" style="text-align:center;color:#10b981">0</div>
+        <div id="tot-l" style="text-align:center;color:#3b82f6">0</div>
+        <div id="tot-t" style="text-align:center;color:var(--t1);font-size:17px">0</div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="ftr">
+    <div class="ftr-i">
+      <div>
+        <div class="ftr-s">Source: <a href="https://results.eci.gov.in/ResultAcGenMay2026/partywiseresult-S25.htm" target="_blank">Election Commission of India</a> — Data auto-updates every 60 seconds</div>
+        <div class="ftr-u" id="ftr-upd">Last updated: —</div>
+      </div>
+      
+      <div class="vc-box">
+        <div class="vc-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a7ae2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <div><div class="vc-lbl">Total Visitors</div><div class="vc-n" id="vc-n">—</div></div>
+      </div>
+    </div>
+    <div class="vc-lbl" style="text-align: center;">Designed & Developed by Ankan Chakraborty</div>
+  </footer>
+</div>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+
+<script>
+let map;
+
+function renderMap(seatMap = {}) {
+
+  if (map) {
+    map.remove();
+  }
+
+  map = L.map('map').setView([23.5, 87.5], 7);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')
+    .addTo(map);
+
+  fetch('./data/wb-ac.geojson')
+    .then(res => res.json())
+    .then(data => {
+
+      const layer = L.geoJSON(data, {
+
+        style: function(feature) {
+
+          const acNo = feature.properties.AC_NO;
+
+          const party = seatMap[acNo] || "OTH";
+
+          const color = PARTY_CLR[party] || "#444";
+
+          return {
+            color: "#111",
+            weight: 1,
+            fillColor: color,
+            fillOpacity: 0.8
+          };
+        },
+
+        onEachFeature: function(feature, layer) {
+          const acNo = feature.properties.AC_NO;
+          const name = feature.properties.AC_NAME || "Seat";
+          const party = seatMap[acNo] || "TBD";
+
+          layer.bindTooltip(
+            `<b>${name}</b><br>Seat: ${acNo}<br>Party: ${party}`
+          );
+        }
+
+      }).addTo(map);
+
+      map.fitBounds(layer.getBounds());
+
+      document.getElementById('map-st').textContent =
+        `✅ ${Object.keys(seatMap).length} seats mapped`;
+
+    })
+    .catch(err => {
+      console.error("Map error:", err);
+    });
+}
+</script>
+
+<script>
+// ══════════════════════════════════════════
+//  PARTY LOGOS (SVG symbols)
+// ══════════════════════════════════════════
+const LOGOS = {
+  BJP: `<img src="./assets/logos/bjp.png" style="width:100%;height:100%;object-fit:contain;">`,
+  AITC: `<img src="./assets/logos/aitc.png" style="width:100%;height:100%;object-fit:contain;">`,
+  'CPI(M)': `<img src="./assets/logos/cpim.png" style="width:100%;height:100%;object-fit:contain;">`,
+  BGPM: `<img src="./assets/logos/bgpm.webp" style="width:100%;height:100%;object-fit:contain;">`,
+  AJUP: `<img src="./assets/logos/ajup.png" style="width:100%;height:100%;object-fit:contain;">`,
+  INC: `<img src="./assets/logos/inc.png" style="width:100%;height:100%;object-fit:contain;">`,
+  AISF: `<img src="./assets/logos/aisf.png" style="width:100%;height:100%;object-fit:contain;">`,
+
+};
+
+// ══════════════════════════════════════════
+//  COLORS & HELPERS
+// ══════════════════════════════════════════
+const PARTY_CLR = {
+  BJP:'#FF6600', AITC:'#1565C0', 'CPI(M)':'#B71C1C',
+  BGPM:'#7B1FA2', AJUP:'#00695C', INC:'#0D47A1',
+  BSP:'#4A148C', RSP:'#C62828', CPI:'#D32F2F', NOTA:'#546E7A'
+};
+const CLR_POOL = ['#1976D2','#C2185B','#00796B','#E65100','#512DA8','#2E7D32','#0288D1','#795548'];
+
+function getClr(name, i=0) {
+  const n = (name||'').toUpperCase();
+  for (const [k,c] of Object.entries(PARTY_CLR)) if (n.includes(k)) return c;
+  return CLR_POOL[i % CLR_POOL.length];
+}
+function getAbbr(name) {
+  const m = (name||'').match(/[-–]\s*([A-Z()\s]{2,})\s*$/);
+  if (m) return m[1].trim();
+  return (name||'').split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,5)||'OTH';
+}
+function getBase(name) { return (name||'').replace(/\s*[-–][^-–]+$/, '').trim(); }
+function getLogo(name, color, i) {
+  const n = (name||'').toUpperCase();
+  for (const [k,svg] of Object.entries(LOGOS)) if (n.includes(k)) return svg;
+  const ab = getAbbr(name).slice(0,3);
+  return `<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="23" fill="${color}1a" stroke="${color}" stroke-width="2"/><text x="24" y="30" text-anchor="middle" font-size="13" font-weight="900" fill="${color}" font-family="system-ui">${ab}</text></svg>`;
+}
+
+// Normalize full party name → abbreviation
+function toAbbr(fullName) {
+  const n = (fullName||'').toUpperCase();
+  if (n.includes('BHARATIYA JANATA') || n === 'BJP') return 'BJP';
+  if (n.includes('TRINAMOOL') || n.includes('AITC')) return 'AITC';
+  if (n.includes('MARXIST') || n.includes('CPI(M)') || n.includes('CPIM')) return 'CPI(M)';
+  if (n.includes('GORKHA')) return 'BGPM';
+  if (n.includes('UNNAYAN') || n === 'AJUP') return 'AJUP';
+  if (n.includes('INDIAN NATIONAL CONGRESS') || n === 'INC') return 'INC';
+  if (n.includes('BAHUJAN') || n === 'BSP') return 'BSP';
+  if (n.includes('REVOLUTIONARY SOCIALIST') || n === 'RSP') return 'RSP';
+  if (n.includes('COMMUNIST PARTY OF INDIA') && !n.includes('MARXIST')) return 'CPI';
+  return null;
+}
+
+// ══════════════════════════════════════════
+//  CORS PROXY FETCH
+// ══════════════════════════════════════════
+function makeAttempt(fetchPromise, timeoutMs) {
+  const t = new Promise((_, rj) => setTimeout(() => rj(new Error('timeout')), timeoutMs));
+  return Promise.race([fetchPromise, t]);
+}
+
+async function proxyFetch(url, timeoutMs = 12000) {
+  const enc = encodeURIComponent(url);
+
+  const proxies = [
+    `https://corsproxy.io/?${enc}`,   // BEST (India me fast)
+    `https://api.codetabs.com/v1/proxy?quest=${enc}`,
+    `https://thingproxy.freeboard.io/fetch/${url}`
+  ];
+
+  for (let p of proxies) {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), timeoutMs);
+
+      const res = await fetch(p, { signal: ctrl.signal });
+
+      if (res.ok) {
+        const text = await res.text();
+        if (text && text.length > 200) return text;
+      }
+    } catch (e) {
+      console.warn("Proxy failed:", p);
+    }
+  }
+
+  throw new Error("All proxies failed");
+}
+
+// ══════════════════════════════════════════
+//  PARSE PARTY TOTALS PAGE
+// ══════════════════════════════════════════
+function parsePartyPage(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const parties = [];
+
+  for (const tbl of doc.querySelectorAll('table')) {
+    const rows = tbl.rows;
+    if (!rows.length) continue;
+    const hdrTxt = rows[0]?.textContent || '';
+    if (!hdrTxt.toLowerCase().includes('won') || !hdrTxt.toLowerCase().includes('leading')) continue;
+
+    for (let i = 1; i < rows.length; i++) {
+      const cells = rows[i].cells; // direct cells only
+      if (cells.length < 4) continue;
+      const name = cells[0].textContent.trim();
+      if (!name || name.toLowerCase() === 'total' || name.toLowerCase() === 'party') continue;
+      const won = parseInt(cells[1].textContent) || 0;
+      const leading = parseInt(cells[2].textContent) || 0;
+      const total = parseInt(cells[3].textContent.replace(/\D/g,'')) || 0;
+      if (total > 0) parties.push({ name, won, leading, total });
+    }
+    if (parties.length) break;
+  }
+
+  const bodyTxt = doc.body?.textContent || '';
+  const ts = (bodyTxt.match(/Last Updated at\s+(.+)/i) || [])[1] || '';
+
+  const sorted = parties.sort((a, b) => b.total - a.total);
+  return {
+    parties: sorted,
+    total_seats: 294,
+    total_declared: sorted.reduce((s, p) => s + p.total, 0),
+    last_updated: ts.replace(/\s+/g, ' ').trim()
+  };
+}
+
+// ══════════════════════════════════════════
+//  PARSE CONSTITUENCY PAGE → {no: party}
+// ══════════════════════════════════════════
+function parseConstPage(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const result = {};
+
+  // The main table has rows with 9 direct cells
+  // cells: [0]=name [1]=no [2]=leadCand [3]=leadParty [4]=trailCand [5]=trailParty [6]=margin [7]=round [8]=status
+  for (const tbl of doc.querySelectorAll('table')) {
+    let found = false;
+    for (const row of tbl.rows) {
+      const cells = row.cells;
+      if (cells.length < 3) continue;
+
+      const constNo = cells[1]?.textContent?.trim();
+      if (!constNo || !/^\d{1,3}$/.test(constNo)) continue;
+
+      // Leading party cell text (cells[3])
+      const partyCell = cells.length > 3 ? cells[3].textContent : '';
+
+      let abbr = 'TBD';
+      for (const [fullMatch, short] of [
+        ['Bharatiya Janata Party', 'BJP'],
+        ['Trinamool', 'AITC'],
+        ['Marxist', 'CPI(M)'],
+        ['Gorkha', 'BGPM'],
+        ['Unnayan', 'AJUP'],
+        ['Indian National Congress', 'INC'],
+        ['Bahujan', 'BSP'],
+        ['Revolutionary Socialist', 'RSP'],
+        ['Communist Party of India', 'CPI'],
+        ['Nationalist Congress', 'NCP'],
+        ['Forward Bloc', 'AIFB'],
+      ]) {
+        if (partyCell.includes(fullMatch)) { abbr = short; break; }
+      }
+
+      result[constNo] = abbr;
+      found = true;
+    }
+    if (found && Object.keys(result).length > 0) break;
+  }
+  return result;
+}
+
+// ══════════════════════════════════════════
+//  FETCH ALL DATA
+// ══════════════════════════════════════════
+const BASE = 'https://results.eci.gov.in/ResultAcGenMay2026/';
+
+async function fetchPartyTotals() {
+  throw new Error("No backend");
+}
+
+async function fetchAllConstituencies() {
+  return {};
+}
+
+// ══════════════════════════════════════════
+//  RENDER DASHBOARD
+// ══════════════════════════════════════════
+function render(d) {
+  if (!d || !d.parties || !d.parties.length) return;
+  const { parties, total_seats: TS = 294, total_declared: TD = 0, last_updated: LU = '' } = d;
+  const ldr = parties[0];
+
+  document.getElementById('s-dec').textContent = TD;
+  document.getElementById('s-ldr').textContent = ldr ? getAbbr(ldr.name) : '—';
+  document.getElementById('s-ldr-s').textContent = ldr ? `${ldr.total} seats mein aage` : 'seats';
+  document.getElementById('s-upd').textContent = LU || 'Live';
+  document.getElementById('hdr-sub').textContent = `294 Seats | Majority: 148 | Ghoshit: ${TD}`;
+  document.getElementById('ftr-upd').textContent = 'Last updated: ' + (LU || new Date().toLocaleTimeString('en-IN'));
+
+  if (ldr) {
+    const c = getClr(ldr.name);
+    const pct = Math.min(100, (ldr.total / TS) * 100);
+    const fill = document.getElementById('maj-fill');
+    fill.style.background = `linear-gradient(90deg, ${c}99, ${c})`;
+    fill.style.boxShadow = `0 0 18px ${c}40`;
+    document.getElementById('maj-ldr').textContent =
+      `${getAbbr(ldr.name)} — ${ldr.total} seats | ${ldr.total >= 148 ? '✅ Bahumat Hasi!' : '⚠️ Bahumat se ' + (148 - ldr.total) + ' door'}`;
+    setTimeout(() => {
+      fill.style.width = pct + '%';
+      document.getElementById('maj-ft').textContent = ldr.total;
+    }, 100);
+  }
+
+  // Party cards
+  const grid = document.getElementById('pgrid');
+  grid.innerHTML = '';
+  parties.slice(0, 8).forEach((p, i) => {
+    const c = getClr(p.name, i), logo = getLogo(p.name, c, i);
+    const abbr = getAbbr(p.name), fname = getBase(p.name);
+    const pct = TD > 0 ? (p.total / TD) * 100 : 0;
+    const el = document.createElement('div');
+    el.className = 'pc'; el.style.setProperty('--c', c);
+    el.innerHTML = `<div class="pc-logo">${logo}</div>
+      <div class="pc-ab">${abbr}</div>
+      <div class="pc-fn">${fname}</div>
+      <div class="pc-n">${p.total}</div>
+      <div class="pc-bk">Jeeta: <b>${p.won}</b>&nbsp;&nbsp;Aage: <b>${p.leading}</b></div>
+      <div class="pc-bar"><div class="pc-bf" data-w="${pct}"></div></div>`;
+    grid.appendChild(el);
+  });
+  setTimeout(() => document.querySelectorAll('.pc-bf').forEach(e => { e.style.width = e.dataset.w + '%'; }), 200);
+
+  // Distribution bar
+  const db = document.getElementById('dist-bar'), dl = document.getElementById('dist-leg');
+  db.innerHTML = ''; dl.innerHTML = '';
+  document.getElementById('dd').textContent = TD;
+  parties.forEach((p, i) => {
+    const c = getClr(p.name, i), pct = (p.total / TS) * 100, abbr = getAbbr(p.name);
+    if (pct < 0.2) return;
+    const seg = document.createElement('div'); seg.className = 'db-s';
+    seg.style.cssText = `width:0%;background:${c}`; seg.title = `${abbr}: ${p.total}`;
+    if (pct > 4) seg.textContent = p.total;
+    db.appendChild(seg); setTimeout(() => { seg.style.width = pct + '%'; }, 150);
+    const li = document.createElement('div'); li.className = 'dl-i';
+    li.innerHTML = `<div class="dl-d" style="background:${c}"></div><span>${abbr}</span>&nbsp;<strong style="color:var(--t1)">${p.total}</strong>`;
+    dl.appendChild(li);
+  });
+  const und = TS - TD;
+  if (und > 0) {
+    const pct = (und / TS) * 100;
+    const seg = document.createElement('div'); seg.className = 'db-s';
+    seg.style.cssText = 'width:0%;background:rgba(255,255,255,.05);color:rgba(255,255,255,.25)';
+    if (pct > 4) seg.textContent = und;
+    db.appendChild(seg); setTimeout(() => { seg.style.width = pct + '%'; }, 150);
+    const li = document.createElement('div'); li.className = 'dl-i';
+    li.innerHTML = `<div class="dl-d" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)"></div><span>Baaki</span>&nbsp;<strong style="color:var(--t2)">${und}</strong>`;
+    dl.appendChild(li);
+  }
+
+  // Table
+  const tb = document.getElementById('tbl-body'); tb.innerHTML = '';
+  let tw = 0, tl = 0, tt = 0;
+  parties.forEach((p, i) => {
+    const c = getClr(p.name, i), logo = getLogo(p.name, c, i);
+    const abbr = getAbbr(p.name), fname = getBase(p.name).slice(0, 30);
+    const row = document.createElement('div'); row.className = 'tbl-r';
+    row.innerHTML = `<div class="tbl-p"><div class="tbl-lw">${logo}</div><div><div class="tbl-ab" style="color:${c}">${abbr}</div><div class="tbl-fn">${fname}</div></div></div>
+      <div class="tbl-w">${p.won}</div><div class="tbl-l">${p.leading}</div><div class="tbl-t">${p.total}</div>`;
+    tb.appendChild(row); tw += p.won; tl += p.leading; tt += p.total;
+  });
+  document.getElementById('tot-w').textContent = tw;
+  document.getElementById('tot-l').textContent = tl;
+  document.getElementById('tot-t').textContent = tt;
+  document.getElementById('tbl-tot').style.display = 'grid';
+}
+
+// ══════════════════════════════════════════
+//  FALLBACK DATA  (ECI se — 04/05/2026 12:15 PM)
+// ══════════════════════════════════════════
+function getFallback() {
+  return {
+    parties: [
+      { name: 'Bharatiya Janata Party - BJP',              won: 0, leading: 169, total: 169 },
+      { name: 'All India Trinamool Congress - AITC',        won: 0, leading: 91,  total: 91  },
+      { name: 'Bharatiya Gorkha Prajatantrik Morcha - BGPM',won: 0, leading: 1,   total: 1   },
+      { name: 'Aam Janata Unnayan party - AJUP',            won: 0, leading: 1,   total: 1   },
+      { name: 'Communist Party of India (Marxist) - CPIM',won: 0, leading: 1,   total: 1   },
+      { name: 'All India Secular Front - AISF',             won: 0, leading: 1,   total: 1   },
+    ],
+    total_seats: 294, total_declared: 264,
+    last_updated: 'ECI data — 04/05/2026 12:15 PM (auto-refresh try ho raha hai)'
+  };
+}
+
+function showErr(msg) {
+  const el = document.getElementById('err-bar');
+  el.innerHTML = `⚠ ${msg}`;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 10000);
+}
+
+// ══════════════════════════════════════════
+//  AUTO-REFRESH
+// ══════════════════════════════════════════
+let timer, secs = 60, isFetching = false;
+
+function tick() {
+  secs--;
+  document.getElementById('cd').textContent = secs;
+  if (secs <= 0) { secs = 60; loadData(false); }
+}
+function startTimer() {
+  clearInterval(timer);
+  secs = 60;
+  document.getElementById('cd').textContent = 60;
+  timer = setInterval(tick, 1000);
+}
+function manualRefresh() {
+  if (isFetching) return;
+  clearInterval(timer);
+  loadData(false);
+}
+
+// ══════════════════════════════════════════
+//  MAIN LOAD
+// ══════════════════════════════════════════
+async function loadData(showLoad = true) {
+  if (isFetching) { startTimer(); return; }
+  isFetching = true;
+
+  // Step 1: Always show app immediately with fallback — never block on spinner
+  if (showLoad) {
+    render(getFallback());
+
+    // ✅ FIXED
+    renderMap({});
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
+    if (location.protocol === 'file:') {
+      showErr('file:// se khola gaya — server use karo (python -m http.server 8080)');
+    }
+  }
+
+  startTimer();
+
+  // Step 2: Try to fetch live data in background
+  try {
+    const liveTimeout = new Promise((_, rj) =>
+      setTimeout(() => rj(new Error('Live data timeout')), 14000)
+    );
+    const partyData = await Promise.race([fetchPartyTotals(), liveTimeout]);
+    render(partyData);  // Update UI with real data if fetch succeeds
+    isFetching = false;
+
+    // Step 3: Fetch constituency map in background
+    document.getElementById('map-st').textContent = 'Constituency data fetch ho raha hai...';
+    fetchAllConstituencies()
+      .then(seatMap => renderMap(seatMap))
+      .catch(() => {
+        document.getElementById('map-st').textContent = 'District view dikh raha hai — constituency data unavailable';
+      });
+
+  } catch (e) {
+    // Fallback already rendered in Step 1 — just show a soft error
+    showErr('Live data nahi aaya (' + e.message + ') — Cached data dikh raha hai, auto-refresh try karega.');
+    isFetching = false;
+  }
+}
+
+// ══════════════════════════════════════════
+//  VISIT COUNTER  (countapi.xyz band ho gaya; localStorage use karo)
+// ══════════════════════════════════════════
+function trackVisit() {
+  const k = 'wb26_vc';
+  const n = parseInt(localStorage.getItem(k) || '0') + 1;
+  localStorage.setItem(k, n);
+  document.getElementById('vc-n').textContent = n.toLocaleString('en-IN');
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+trackVisit();
+loadData(true);
+</script>
+</body>
+</html>

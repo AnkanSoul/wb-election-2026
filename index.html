@@ -264,9 +264,7 @@ let map;
 
 function renderMap(seatMap = {}) {
 
-  if (map) {
-    map.remove();
-  }
+  if (map) map.remove();
 
   map = L.map('map').setView([23.5, 87.5], 7);
 
@@ -283,22 +281,32 @@ function renderMap(seatMap = {}) {
 
           const acNo = String(feature.properties.AC_NO).padStart(3, '0');
 
-          const party = seatMap[acNo] || "OTH";
+          const party = seatMap[acNo];
 
-          const color = PARTY_CLR[party] || "#444";
+          // 🔥 IMPORTANT FIX
+          if (!party) {
+            return {
+              color: "#222",
+              weight: 1,
+              fillColor: "#1a1a1a",
+              fillOpacity: 0.4
+            };
+          }
+
+          const color = PARTY_CLR[party] || "#888";
 
           return {
-            color: "#111",
+            color: "#000",
             weight: 1,
             fillColor: color,
-            fillOpacity: 0.8
+            fillOpacity: 0.85
           };
         },
 
         onEachFeature: function(feature, layer) {
           const acNo = String(feature.properties.AC_NO).padStart(3, '0');
           const name = feature.properties.AC_NAME || "Seat";
-          const party = seatMap[acNo] || "TBD";
+          const party = seatMap[acNo] || "Counting...";
 
           layer.bindTooltip(
             `<b>${name}</b><br>Seat: ${acNo}<br>Party: ${party}`
@@ -308,6 +316,11 @@ function renderMap(seatMap = {}) {
       }).addTo(map);
 
       map.fitBounds(layer.getBounds());
+
+      // 🔥 CRITICAL FIX (leaflet bug)
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 300);
 
       document.getElementById('map-st').textContent =
         `✅ ${Object.keys(seatMap).length} seats mapped`;
@@ -517,42 +530,27 @@ async function fetchPartyTotals() {
 }
 
 async function fetchAllConstituencies() {
-  try {
-    const seatMap = {};
+  const seatMap = {};
 
-    const promises = [];
+  for (let i = 1; i <= 294; i++) {
+    const id = i.toString().padStart(3, '0');
 
-    // 294 seats fetch
-    for (let i = 1; i <= 294; i++) {
-      const id = i.toString().padStart(3, '0');
+    try {
+      const html = await fetch(`https://wb-election-api.onrender.com/api/const/${id}`)
+        .then(r => r.text());
 
-      promises.push(
-        fetch(`https://wb-election-api.onrender.com/api/const/${id}`)
-          .then(r => r.text())
-          .then(html => {
-            const parsed = parseConstPage(html);
-            Object.assign(seatMap, parsed);
-          })
-          .catch(() => {})
-      );
-    }
+      const parsed = parseConstPage(html);
+      Object.assign(seatMap, parsed);
 
-    for (let i = 1; i <= 294; i++) {
-      const id = i.toString().padStart(3, '0');
-    
-      try {
-        const html = await fetch(`https://wb-election-api.onrender.com/api/const/${id}`).then(r => r.text());
-        const parsed = parseConstPage(html);
-        Object.assign(seatMap, parsed);
-      } catch {}
-    }
+      // 🔥 LIVE UPDATE MAP (important)
+      if (i % 20 === 0) {
+        renderMap(seatMap);
+      }
 
-    return seatMap;
-
-  } catch (e) {
-    console.error("Seat fetch error", e);
-    return {};
+    } catch {}
   }
+
+  return seatMap;
 }
 
 // ══════════════════════════════════════════
@@ -729,11 +727,14 @@ async function loadData(showLoad = true) {
 
     // Step 3: Fetch constituency map in background
     document.getElementById('map-st').textContent = 'Constituency data fetch ho raha hai...';
-    fetchAllConstituencies()
-      .then(seatMap => renderMap(seatMap))
-      .catch(() => {
-        document.getElementById('map-st').textContent = 'District view dikh raha hai — constituency data unavailable';
-      });
+    setTimeout(() => {
+      fetchAllConstituencies()
+        .then(seatMap => renderMap(seatMap))
+        .catch(() => {
+          document.getElementById('map-st').textContent =
+            'District view dikh raha hai — constituency data unavailable';
+        });
+    }, 2000);
 
   } catch (e) {
     // Fallback already rendered in Step 1 — just show a soft error

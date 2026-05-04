@@ -543,33 +543,32 @@ async function getValidIds() {
   return ids;
 }
 
-// 🔥 STEP 2: CORRECT FETCH
 async function fetchAllConstituencies() {
   const seatMap = {};
 
-  const ids = await getValidIds();
-
-  for (let i = 0; i < ids.length; i++) {
-    const id = ids[i];
+  for (let i = 1; i <= 294; i++) {
+    const id = i.toString().padStart(3, '0');
 
     try {
-      const html = await fetch(`https://wb-election-api.onrender.com/api/const/${id}`)
-        .then(r => r.text());
+      // 🔥 DIRECT PROXY CALL (NO BACKEND)
+      const url = `https://results.eci.gov.in/ResultAcGenMay2026/statewiseS25${id}.htm`;
+
+      const html = await proxyFetch(url);
 
       const parsed = parseConstPage(html);
       Object.assign(seatMap, parsed);
 
-      // 🔥 live update map
+      // 🔥 live map update
       if (i % 10 === 0) {
         renderMap(seatMap);
       }
 
     } catch (e) {
-      console.log("Skip:", id);
+      console.log("Fail:", id);
     }
   }
 
-  console.log("Final seats:", Object.keys(seatMap).length);
+  console.log("FINAL:", Object.keys(seatMap).length);
 
   return seatMap;
 }

@@ -7,32 +7,28 @@ app.use(cors());
 
 const BASE = 'https://results.eci.gov.in/ResultAcGenMay2026/';
 
-// ✅ Health check
-app.get('/', (req, res) => {
-  res.send('API is running 🚀');
-});
+app.get('/', (req, res) => res.send('API is running 🚀'));
 
-// 🔥 Common headers
 const HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
-  "Accept": "text/html,application/xhtml+xml",
+  "Accept": "text/html,application/xhtml+xml,*/*",
   "Accept-Language": "en-US,en;q=0.9",
   "Referer": "https://results.eci.gov.in/",
-  "Origin": "https://results.eci.gov.in",
   "Connection": "keep-alive"
 };
 
-// 🔁 Retry function
 async function fetchWithRetry(url, retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
       const res = await fetch(url, { headers: HEADERS });
       const text = await res.text();
-      if (text.includes("Access Denied")) throw new Error("Blocked");
+      if (text.includes("Access Denied") || text.length < 200) {
+        throw new Error(`Bad response: len=${text.length}`);
+      }
       return text;
     } catch (err) {
-      console.log(`Retry ${i + 1} failed for ${url}: ${err.message}`);
-      await new Promise(r => setTimeout(r, 800));
+      console.log(`Retry ${i + 1}/${retries} failed for ${url}: ${err.message}`);
+      await new Promise(r => setTimeout(r, 1000 * (i + 1)));
     }
   }
   throw new Error("All retries failed");
@@ -44,142 +40,193 @@ app.get('/api/party', async (req, res) => {
     const html = await fetchWithRetry(BASE + 'partywiseresult-S25.htm');
     res.send(html);
   } catch (e) {
-    console.error(e);
-    res.status(500).send('Failed to fetch party data');
+    res.status(500).send('Failed: ' + e.message);
   }
 });
 
-// ✅ CONSTITUENCY DATA (single)
-app.get('/api/const/:id', async (req, res) => {
+// ✅ SINGLE CONSTITUENCY RAW HTML — debug tool
+// Open in browser: https://wb-election-api.onrender.com/api/raw/001
+app.get('/api/raw/:id', async (req, res) => {
   try {
     const id = req.params.id.padStart(3, '0');
     const html = await fetchWithRetry(BASE + `statewiseS25${id}.htm`);
-    res.send(html);
+    // Return as plain text so browser shows it clearly
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.send(`=== SEAT ${id} | len=${html.length} ===\n\n${html}`);
   } catch (e) {
-    console.error(e);
-    res.status(500).send('Failed to fetch constituency');
+    res.status(500).send('Error: ' + e.message);
   }
 });
 
 // ══════════════════════════════════════════
-// 🔥 BETTER PARTY DETECTION
-// ECI page mein "LEADING"/"WON" ke paas party name hoti hai
+// 🔥 PARTY DETECTION — handles ALL ECI formats
+// ECI pages use full names AND abbreviations
 // ══════════════════════════════════════════
 function detectParty(html) {
   const t = html.toUpperCase();
 
+  // Each entry: [match_string, return_abbr]
+  // Order matters — specific first, generic last
   const patterns = [
-    ['BHARATIYA JANATA PARTY', 'BJP'],
-    ['ALL INDIA TRINAMOOL CONGRESS', 'AITC'],
-    ['TRINAMOOL CONGRESS', 'AITC'],
-    ['ALL INDIA SECULAR FRONT', 'AISF'],
-    ['BHARATIYA GORKHA PRAJATANTRIK MORCHA', 'BGPM'],
-    ['GORKHA NATIONAL LIBERATION FRONT', 'GNLF'],
-    ['AAM JANATA UNNAYAN PARTY', 'AJUP'],
-    ['BAHUJAN SAMAJ PARTY', 'BSP'],
-    ['REVOLUTIONARY SOCIALIST PARTY', 'RSP'],
-    ['COMMUNIST PARTY OF INDIA  (MARXIST)', 'CPI(M)'],
-    ['COMMUNIST PARTY OF INDIA (MARXIST)', 'CPI(M)'],
-    ['CPI(M)', 'CPI(M)'],
-    ['CPIM', 'CPI(M)'],
-    ['COMMUNIST PARTY OF INDIA', 'CPI'],
-    ['INDIAN NATIONAL CONGRESS', 'INC'],
+    // Full names
+    ['BHARATIYA JANATA PARTY',            'BJP'],
+    ['ALL INDIA TRINAMOOL CONGRESS',      'AITC'],
+    ['TRINAMOOL CONGRESS',                'AITC'],
+    ['ALL INDIA SECULAR FRONT',           'AISF'],
+    ['BHARATIYA GORKHA PRAJATANTRIK',     'BGPM'],
+    ['GORKHA NATIONAL LIBERATION FRONT',  'GNLF'],
+    ['AAM JANATA UNNAYAN PARTY',          'AJUP'],
+    ['BAHUJAN SAMAJ PARTY',              'BSP'],
+    ['REVOLUTIONARY SOCIALIST PARTY',    'RSP'],
+    ['COMMUNIST PARTY OF INDIA (MARXIST)','CPI(M)'],
+    ['COMMUNIST PARTY OF INDIA  (MARXIST)','CPI(M)'],
+    ['CPIM',                             'CPI(M)'],
+    ['COMMUNIST PARTY OF INDIA',         'CPI'],
+    ['INDIAN NATIONAL CONGRESS',         'INC'],
+    // Abbreviations (ECI pages sometimes show these)
+    [' BJP ',   'BJP'],
+    ['>BJP<',   'BJP'],
+    ['(BJP)',    'BJP'],
+    [' AITC ',  'AITC'],
+    ['>AITC<',  'AITC'],
+    ['(AITC)',   'AITC'],
+    [' INC ',   'INC'],
+    ['>INC<',   'INC'],
+    ['(INC)',    'INC'],
+    [' BSP ',   'BSP'],
+    [' RSP ',   'RSP'],
+    [' CPI ',   'CPI'],
+    [' AISF ',  'AISF'],
+    [' AJUP ',  'AJUP'],
+    [' BGPM ',  'BGPM'],
   ];
 
-  // "LEADING" / "WON" ke 500 chars pehle party name dhundho
-  const leadingIdx = t.indexOf('LEADING');
-  const wonIdx = t.indexOf('WON');
-  const statusIdx = Math.min(
-    leadingIdx > -1 ? leadingIdx : Infinity,
-    wonIdx > -1 ? wonIdx : Infinity
-  );
-
-  if (statusIdx !== Infinity) {
-    const nearText = t.substring(Math.max(0, statusIdx - 500), statusIdx + 100);
-    for (const [pattern, abbr] of patterns) {
-      if (nearText.includes(pattern)) return abbr;
+  // Strategy 1: Find LEADING/WON row and check nearby text
+  // ECI page has: <td>Candidate</td><td>Party</td><td>Votes</td><td>Status</td>
+  // Status "LEADING" or "WON" appears AFTER party name in same row
+  for (const keyword of ['LEADING', 'WON']) {
+    let pos = 0;
+    while (true) {
+      const idx = t.indexOf(keyword, pos);
+      if (idx === -1) break;
+      // Check 800 chars before this keyword (covers the whole table row)
+      const before = t.substring(Math.max(0, idx - 800), idx);
+      for (const [pat, abbr] of patterns) {
+        if (before.includes(pat)) return abbr;
+      }
+      pos = idx + 1;
     }
   }
 
-  // Fallback: full page scan
-  for (const [pattern, abbr] of patterns) {
-    if (t.includes(pattern)) return abbr;
+  // Strategy 2: Full page scan (fallback)
+  for (const [pat, abbr] of patterns) {
+    if (t.includes(pat)) return abbr;
   }
 
   return 'OTH';
 }
 
-// ✅ DEBUG endpoint — single seat check karo
-// Browser mein kholo: https://wb-election-api.onrender.com/api/debug/001
+// ✅ SINGLE CONSTITUENCY (JSON)
+app.get('/api/const/:id', async (req, res) => {
+  try {
+    const id = req.params.id.padStart(3, '0');
+    const html = await fetchWithRetry(BASE + `statewiseS25${id}.htm`);
+    const party = detectParty(html);
+    res.send(html);
+  } catch (e) {
+    res.status(500).send('Failed: ' + e.message);
+  }
+});
+
+// ✅ DEBUG — shows detected party + relevant snippet
 app.get('/api/debug/:id', async (req, res) => {
   try {
     const id = req.params.id.padStart(3, '0');
     const html = await fetchWithRetry(BASE + `statewiseS25${id}.htm`);
     const party = detectParty(html);
-
     const t = html.toUpperCase();
-    const idx = Math.max(0, t.indexOf('LEADING') - 600);
-    const snippet = html.substring(idx, idx + 1000);
 
-    res.json({ id, party, htmlLength: html.length, snippet });
+    // Find LEADING/WON position
+    const leadPos = t.indexOf('LEADING');
+    const wonPos  = t.indexOf('WON');
+    const statusPos = Math.min(
+      leadPos > -1 ? leadPos : Infinity,
+      wonPos  > -1 ? wonPos  : Infinity
+    );
+
+    const snippetStart = statusPos !== Infinity
+      ? Math.max(0, statusPos - 800) : 0;
+    const snippet = html.substring(snippetStart, snippetStart + 1200);
+
+    res.json({
+      id,
+      party,
+      htmlLength: html.length,
+      leadingAt: leadPos,
+      wonAt: wonPos,
+      snippet
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
 // ══════════════════════════════════════════
-// ✅ SEATMAP — all 294 seats, cached 3 min
+// ✅ SEATMAP — all 294, cached 3 min
 // ══════════════════════════════════════════
 let seatmapCache = { data: null, ts: 0 };
 
 app.get('/api/seatmap', async (req, res) => {
   if (seatmapCache.data && Date.now() - seatmapCache.ts < 180_000) {
-    console.log(`✅ Cache hit — ${seatmapCache.data.count} seats`);
+    console.log(`✅ Cache — ${seatmapCache.data.count} seats`);
     return res.json(seatmapCache.data);
   }
 
-  console.log('🔄 Fetching all 294 constituencies...');
+  console.log('🔄 Fetching 294 seats...');
   const seatMap = {};
-  const errors = [];
+  const failed  = [];
+  const othList = []; // log OTH seats for debugging
 
   const ids = Array.from({ length: 294 }, (_, i) =>
     (i + 1).toString().padStart(3, '0')
   );
 
-  const BATCH_SIZE = 15;
+  const BATCH = 10; // smaller batch = less ECI rate-limit risk
 
-  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
-    const batch = ids.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < ids.length; i += BATCH) {
+    const batch = ids.slice(i, i + BATCH);
 
     await Promise.all(batch.map(async id => {
       try {
         const html = await fetchWithRetry(BASE + `statewiseS25${id}.htm`, 2);
-        if (html && html.length > 300) {
-          const party = detectParty(html);
-          seatMap[id] = party;
-          if (party === 'OTH') console.log(`⚠️  OTH seat ${id} (len:${html.length})`);
-        }
+        const party = detectParty(html);
+        seatMap[id] = party;
+        if (party === 'OTH') othList.push(id);
       } catch {
-        errors.push(id);
-        console.log(`❌ Failed: seat ${id}`);
+        failed.push(id);
       }
     }));
 
-    console.log(`✅ ${Math.min(i + BATCH_SIZE, 294)}/294 — mapped: ${Object.keys(seatMap).length}`);
-
-    if (i + BATCH_SIZE < ids.length) {
-      await new Promise(r => setTimeout(r, 300));
-    }
+    const done = Math.min(i + BATCH, 294);
+    console.log(`${done}/294 | mapped:${Object.keys(seatMap).length} | oth:${othList.length} | fail:${failed.length}`);
+    await new Promise(r => setTimeout(r, 400)); // breathing room
   }
 
-  const out = { seatMap, count: Object.keys(seatMap).length, errors: errors.length };
-  seatmapCache = { data: out, ts: Date.now() };
-  console.log(`🗺️  Done: ${out.count} seats, ${out.errors} errors`);
+  console.log('OTH seats:', othList.slice(0, 20));
+  console.log('Failed:', failed.slice(0, 20));
 
+  const out = {
+    seatMap,
+    count:   Object.keys(seatMap).length,
+    errors:  failed.length,
+    othCount: othList.length,
+    othSample: othList.slice(0, 10),
+    generated: new Date().toISOString()
+  };
+
+  seatmapCache = { data: out, ts: Date.now() };
   res.json(out);
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🔥 API running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🔥 API running on port ${PORT}`));

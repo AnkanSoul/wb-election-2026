@@ -53,7 +53,7 @@ a{color:var(--blue);text-decoration:none}
 .maj-mk{position:absolute;top:0;bottom:0;left:50.34%;width:2px;background:rgba(255,255,255,.3)}
 .maj-mk::after{content:'148';position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,.45);font-weight:700}
 .maj-ax{display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:var(--t3)}
-.cols{display:grid;grid-template-columns:1fr 290px;gap:16px;margin-bottom:16px;align-items:start}
+.cols{display:grid;grid-template-columns:1fr 300px;gap:16px;margin-bottom:16px;align-items:start}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:10px;margin-bottom:16px}
 .pc{background:var(--card);border:1px solid var(--b1);border-radius:11px;padding:13px 12px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
 .pc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--c)}
@@ -66,11 +66,16 @@ a{color:var(--blue);text-decoration:none}
 .pc-bk b{color:var(--t1)}
 .pc-bar{height:3px;background:rgba(255,255,255,.07);border-radius:2px;margin-top:10px;overflow:hidden}
 .pc-bf{height:100%;background:var(--c);border-radius:2px;width:0;transition:width 1.2s ease}
-.map-card{background:var(--card);border:1px solid var(--b1);border-radius:12px;overflow:hidden}
-.map-hd{padding:11px 15px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center}
-.map-body{padding:10px;min-height:200px}
-.map-leg{padding:8px 12px;border-top:1px solid var(--b1);display:flex;flex-wrap:wrap;gap:7px}
-.map-st{padding:7px 12px;font-size:11px;color:var(--t3);border-top:1px solid var(--b1);text-align:center;line-height:1.4}
+/* MAP */
+.map-card{background:var(--card);border:1px solid var(--b1);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.map-hd{padding:11px 15px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+/* KEY FIX: map container must have explicit height, no flex interference */
+#map{height:480px;width:100%;display:block;}
+.map-st{padding:7px 12px;font-size:11px;color:var(--t3);border-top:1px solid var(--b1);text-align:center;line-height:1.4;flex-shrink:0}
+/* MAP LEGEND */
+.map-legend{padding:8px 12px;border-top:1px solid var(--b1);display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0}
+.ml-i{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t2)}
+.ml-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
 .dist{background:var(--card);border:1px solid var(--b1);border-radius:12px;padding:15px 20px;margin-bottom:16px}
 .dist-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);margin-bottom:11px}
 .dist-bar{height:28px;border-radius:8px;overflow:hidden;display:flex;margin-bottom:10px}
@@ -99,7 +104,6 @@ a{color:var(--blue);text-decoration:none}
 .vc-ic{width:34px;height:34px;background:rgba(70,120,255,.14);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .vc-lbl{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1.2px;font-weight:700}
 .vc-n{font-size:24px;font-weight:900;color:var(--t1);letter-spacing:-1px;line-height:1.1}
-#tip{position:fixed;background:#091828;border:1px solid rgba(70,120,255,.35);border-radius:8px;padding:8px 12px;font-size:12px;color:#ddeaff;pointer-events:none;z-index:99;display:none;line-height:1.5;max-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
 .err-bar{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:#fca5a5;margin-bottom:14px;display:none}
 @media(max-width:860px){.cols{grid-template-columns:1fr}}
 @media(max-width:580px){
@@ -107,23 +111,24 @@ a{color:var(--blue);text-decoration:none}
   .main{padding:12px 12px 22px}.pgrid{grid-template-columns:repeat(2,1fr)}
   .tbl-h,.tbl-r,.tbl-tot{grid-template-columns:1fr 50px 64px 50px;padding:9px 12px}
   .ftr-i{flex-direction:column;align-items:flex-start}
+  #map{height:350px}
 }
 </style>
 </head>
 <body>
-<div id="tip"></div>
 <div id="loading">
   <div class="ld-ring"></div>
-  <div class="ld-t" id="ld-msg">Live data load ho raha hai...</div>
+  <div class="ld-t">Live data load ho raha hai...</div>
   <div class="ld-s">Election Commission of India — results.eci.gov.in</div>
 </div>
+
 <div id="app" style="display:none">
   <header class="hdr">
     <div class="hdr-i">
       <div>
         <div class="hdr-tag">Election Commission of India — West Bengal Vidhan Sabha</div>
         <div class="hdr-title">Assembly Election <em>2026</em> — Live Results</div>
-        <div class="hdr-sub" id="hdr-sub">294 Total Seats &nbsp;|&nbsp; Majority: 148</div>
+        <div class="hdr-sub" id="hdr-sub">294 Total Seats | Majority: 148</div>
       </div>
       <div class="hdr-r">
         <div class="live-p"><div class="live-d"></div>LIVE</div>
@@ -134,17 +139,20 @@ a{color:var(--blue);text-decoration:none}
       </div>
     </div>
   </header>
+
   <main class="main">
     <div class="err-bar" id="err-bar"></div>
+
     <div class="stats">
       <div class="stat"><div class="sl">Ghoshit Seats</div><div class="sv" id="s-dec">—</div><div class="ss">out of 294 total</div></div>
       <div class="stat"><div class="sl">Sabse Aage</div><div class="sv" id="s-ldr">—</div><div class="ss" id="s-ldr-s">seats</div></div>
       <div class="stat"><div class="sl">Bahumat Zaruri</div><div class="sv" style="color:var(--saffron)">148</div><div class="ss">simple majority</div></div>
       <div class="stat"><div class="sl">Last Updated</div><div class="sv" style="font-size:12px;padding-top:5px;line-height:1.4" id="s-upd">—</div><div class="ss">ECI official</div></div>
     </div>
+
     <div class="maj">
       <div class="maj-hd">
-        <div class="maj-ttl">Bahumat Meter — Sarkar Banane ke Liye 148 Seats Chahiye</div>
+        <div class="maj-ttl">Bahumat Meter — 148 Seats Chahiye</div>
         <div class="maj-ldr" id="maj-ldr">Loading...</div>
       </div>
       <div class="maj-track">
@@ -153,27 +161,37 @@ a{color:var(--blue);text-decoration:none}
       </div>
       <div class="maj-ax"><span>0</span><span style="color:rgba(255,255,255,.25);font-weight:600">← Bahumat rekha 148 →</span><span>294</span></div>
     </div>
+
     <div class="cols">
       <div><div class="pgrid" id="pgrid"></div></div>
+
+      <!-- MAP -->
       <div class="map-card">
         <div class="map-hd">
           <span>West Bengal — Live Map</span>
-          <span id="map-prog" style="font-size:10px;color:var(--t3)"></span>
+          <span id="map-ldr-badge" style="font-size:10px;font-weight:800"></span>
         </div>
-        <div class="map-body">
-          <div id="map" style="height:500px;width:100%;"></div>
-        </div>
+        <!-- Map div DIRECTLY here, no wrapper div -->
+        <div id="map"></div>
+        <div class="map-legend" id="map-legend"></div>
         <div class="map-st" id="map-st">Map load ho raha hai...</div>
       </div>
     </div>
+
     <div class="dist">
       <div class="dist-ttl">Seat Distribution — <span id="dd">0</span> / 294 Ghoshit</div>
       <div class="dist-bar" id="dist-bar"></div>
       <div class="dist-leg" id="dist-leg"></div>
     </div>
+
     <div class="tbl-card">
       <div class="tbl-ttl">Party-wise Results — Jeeta / Aage / Kul</div>
-      <div class="tbl-h"><div>Dal / Party</div><div style="text-align:center">Jeeta</div><div style="text-align:center">Aage Hai</div><div style="text-align:center">Kul</div></div>
+      <div class="tbl-h">
+        <div>Dal / Party</div>
+        <div style="text-align:center">Jeeta</div>
+        <div style="text-align:center">Aage</div>
+        <div style="text-align:center">Kul</div>
+      </div>
       <div id="tbl-body"></div>
       <div class="tbl-tot" id="tbl-tot" style="display:none">
         <div>Kul Yog</div>
@@ -183,6 +201,7 @@ a{color:var(--blue);text-decoration:none}
       </div>
     </div>
   </main>
+
   <footer class="ftr">
     <div class="ftr-i">
       <div>
@@ -201,228 +220,176 @@ a{color:var(--blue);text-decoration:none}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 // ══════════════════════════════════════════
-//  CONSTANTS
+//  CONFIG
 // ══════════════════════════════════════════
 const API = 'https://wb-election-api.onrender.com';
-const ECI_BASE = 'https://results.eci.gov.in/ResultAcGenMay2026/';
 
 const LOGOS = {
-  BJP:     `<img src="./assets/logos/bjp.png"  style="width:100%;height:100%;object-fit:contain;">`,
-  AITC:    `<img src="./assets/logos/aitc.png" style="width:100%;height:100%;object-fit:contain;">`,
-  'CPI(M)':`<img src="./assets/logos/cpim.png" style="width:100%;height:100%;object-fit:contain;">`,
-  BGPM:    `<img src="./assets/logos/bgpm.webp"style="width:100%;height:100%;object-fit:contain;">`,
-  AJUP:    `<img src="./assets/logos/ajup.png" style="width:100%;height:100%;object-fit:contain;">`,
-  INC:     `<img src="./assets/logos/inc.png"  style="width:100%;height:100%;object-fit:contain;">`,
-  AISF:    `<img src="./assets/logos/aisf.png" style="width:100%;height:100%;object-fit:contain;">`,
+  BJP:    `<img src="./assets/logos/bjp.png"  style="width:100%;height:100%;object-fit:contain;">`,
+  AITC:   `<img src="./assets/logos/aitc.png" style="width:100%;height:100%;object-fit:contain;">`,
+  'CPI(M)':`<img src="./assets/logos/cpim.png"style="width:100%;height:100%;object-fit:contain;">`,
+  BGPM:   `<img src="./assets/logos/bgpm.webp"style="width:100%;height:100%;object-fit:contain;">`,
+  AJUP:   `<img src="./assets/logos/ajup.png" style="width:100%;height:100%;object-fit:contain;">`,
+  INC:    `<img src="./assets/logos/inc.png"  style="width:100%;height:100%;object-fit:contain;">`,
+  AISF:   `<img src="./assets/logos/aisf.png" style="width:100%;height:100%;object-fit:contain;">`,
 };
 
 const PARTY_CLR = {
   BJP:'#FF6600', AITC:'#1565C0', 'CPI(M)':'#B71C1C',
   BGPM:'#7B1FA2', AJUP:'#00695C', INC:'#0D47A1',
   BSP:'#4A148C', RSP:'#C62828', CPI:'#D32F2F',
-  AISF:'#E91E63', GNLF:'#795548', OTH:'#37474F'
+  AISF:'#E91E63', GNLF:'#795548'
 };
-const CLR_POOL = ['#1976D2','#C2185B','#00796B','#E65100','#512DA8','#2E7D32','#0288D1','#795548'];
+const CLR_POOL=['#1976D2','#C2185B','#00796B','#E65100','#512DA8','#2E7D32','#0288D1','#795548'];
 
-function getClr(name,i=0){const n=(name||'').toUpperCase();for(const[k,c]of Object.entries(PARTY_CLR))if(n.includes(k))return c;return CLR_POOL[i%CLR_POOL.length]}
-function getAbbr(name){const m=(name||'').match(/[-–]\s*([A-Z()\s]{2,})\s*$/);if(m)return m[1].trim();return(name||'').split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,5)||'OTH'}
-function getBase(name){return(name||'').replace(/\s*[-–][^-–]+$/,'').trim()}
-function getLogo(name,color,i){const n=(name||'').toUpperCase();for(const[k,svg]of Object.entries(LOGOS))if(n.includes(k))return svg;const ab=getAbbr(name).slice(0,3);return`<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="23" fill="${color}1a" stroke="${color}" stroke-width="2"/><text x="24" y="30" text-anchor="middle" font-size="13" font-weight="900" fill="${color}" font-family="system-ui">${ab}</text></svg>`}
+function getClr(n,i=0){const u=(n||'').toUpperCase();for(const[k,c]of Object.entries(PARTY_CLR))if(u.includes(k))return c;return CLR_POOL[i%CLR_POOL.length]}
+function getAbbr(n){const m=(n||'').match(/[-–]\s*([A-Z()\s]{2,})\s*$/);if(m)return m[1].trim();return(n||'').split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,5)||'OTH'}
+function getBase(n){return(n||'').replace(/\s*[-–][^-–]+$/,'').trim()}
+function getLogo(n,c,i){const u=(n||'').toUpperCase();for(const[k,s]of Object.entries(LOGOS))if(u.includes(k))return s;const ab=getAbbr(n).slice(0,3);return`<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="23" fill="${c}1a" stroke="${c}" stroke-width="2"/><text x="24" y="30" text-anchor="middle" font-size="13" font-weight="900" fill="${c}" font-family="system-ui">${ab}</text></svg>`}
 
 // ══════════════════════════════════════════
-//  MAP
+//  MAP  — fixed init
 // ══════════════════════════════════════════
-let map, geoLayer;
+let leafMap = null;
+let geoJsonLayer = null;
+let geoData = null; // cache geojson
 
-function initMap() {
-  if (map) return;
-  map = L.map('map').setView([23.5, 87.5], 7);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+// Call ONCE after #app is visible
+function initLeafletMap() {
+  if (leafMap) return;
+  leafMap = L.map('map', {
+    center: [23.5, 87.5],
+    zoom: 7,
+    zoomControl: true,
+    attributionControl: true
+  });
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO',
+    subdomains: 'abcd', maxZoom: 19
+  }).addTo(leafMap);
 }
 
-function renderMap(seatMap = {}) {
-  initMap();
-  if (geoLayer) { geoLayer.remove(); geoLayer = null; }
+// Color map based on seatMap {id: partyAbbr}
+function colorMap(seatMap) {
+  if (!leafMap || !geoData) return;
+  if (geoJsonLayer) { geoJsonLayer.remove(); geoJsonLayer = null; }
 
-  fetch('./data/wb-ac.geojson')
-    .then(r => r.json())
-    .then(data => {
-      geoLayer = L.geoJSON(data, {
-        style: feature => {
-          const acNo = String(feature.properties.AC_NO).padStart(3,'0');
-          const party = seatMap[acNo];
-          if (!party || party === 'OTH') return { color:'#222', weight:1, fillColor:'#1a2a3a', fillOpacity:0.5 };
-          return { color:'#000', weight:1, fillColor: PARTY_CLR[party]||'#888', fillOpacity:0.85 };
-        },
-        onEachFeature: (feature, layer) => {
-          const acNo = String(feature.properties.AC_NO).padStart(3,'0');
-          const name = feature.properties.AC_NAME || 'Seat';
-          const party = seatMap[acNo] || 'Counting...';
-          layer.bindTooltip(`<b>${name}</b><br>Seat: ${acNo}<br>Party: ${party}`);
-        }
-      }).addTo(map);
-      map.fitBounds(geoLayer.getBounds());
-      setTimeout(() => map.invalidateSize(), 300);
-      const colored = Object.values(seatMap).filter(p => p && p !== 'OTH').length;
-      document.getElementById('map-st').textContent =
-        colored > 0 ? `✅ ${colored} seats mapped` : '⏳ Constituency data loading...';
-    })
-    .catch(e => { document.getElementById('map-st').textContent = 'GeoJSON load failed'; });
-}
-
-// ══════════════════════════════════════════
-//  CONSTITUENCY FETCH — browser side
-//  Uses corsproxy.io (more reliable than server for ECI pages)
-//  Fetches in small batches with delays
-// ══════════════════════════════════════════
-let _seatMap = {};
-let _seatMapDone = false;
-let _fetchingMap = false;
-
-function parseConstHtml(html) {
-  const t = html.toUpperCase();
-  const patterns = [
-    ['BHARATIYA JANATA PARTY','BJP'],['ALL INDIA TRINAMOOL CONGRESS','AITC'],
-    ['TRINAMOOL CONGRESS','AITC'],['ALL INDIA SECULAR FRONT','AISF'],
-    ['BHARATIYA GORKHA PRAJATANTRIK','BGPM'],['AAM JANATA UNNAYAN PARTY','AJUP'],
-    ['BAHUJAN SAMAJ PARTY','BSP'],['REVOLUTIONARY SOCIALIST PARTY','RSP'],
-    ['COMMUNIST PARTY OF INDIA (MARXIST)','CPI(M)'],['CPIM','CPI(M)'],
-    ['COMMUNIST PARTY OF INDIA','CPI'],['INDIAN NATIONAL CONGRESS','INC'],
-    [' BJP ','BJP'],['>BJP<','BJP'],['"BJP"','BJP'],
-    [' AITC ','AITC'],['>AITC<','AITC'],['"AITC"','AITC'],
-    [' INC ','INC'],[' BSP ','BSP'],[' AISF ','AISF'],[' AJUP ','AJUP'],
-  ];
-  for (const kw of ['LEADING','WON']) {
-    let pos = 0;
-    while (pos < t.length) {
-      const idx = t.indexOf(kw, pos);
-      if (idx === -1) break;
-      const before = t.substring(Math.max(0, idx-800), idx);
-      for (const [pat,abbr] of patterns) if (before.includes(pat)) return abbr;
-      pos = idx + 1;
+  geoJsonLayer = L.geoJSON(geoData, {
+    style: feature => {
+      const id = String(feature.properties.AC_NO).padStart(3,'0');
+      const party = seatMap[id];
+      const color = PARTY_CLR[party] || '#1a3050';
+      const hasData = !!party;
+      return {
+        fillColor: color,
+        fillOpacity: hasData ? 0.88 : 0.3,
+        color: '#0a1a2e',
+        weight: 0.8
+      };
+    },
+    onEachFeature: (feature, layer) => {
+      const id = String(feature.properties.AC_NO).padStart(3,'0');
+      const name = feature.properties.AC_NAME || 'Seat';
+      const party = seatMap[id] || '—';
+      layer.bindTooltip(`<b>${name}</b><br>${party}`, {sticky:true});
+      layer.on('mouseover', function(){ this.setStyle({fillOpacity:1,weight:2}); });
+      layer.on('mouseout', function(){ geoJsonLayer.resetStyle(this); });
     }
-  }
-  for (const [pat,abbr] of patterns) if (t.includes(pat)) return abbr;
-  return 'OTH';
+  }).addTo(leafMap);
+
+  leafMap.fitBounds(geoJsonLayer.getBounds(), {padding:[10,10]});
+  setTimeout(() => leafMap.invalidateSize(), 200);
+
+  // Legend
+  const seen = {};
+  Object.values(seatMap).forEach(p => { if(p && PARTY_CLR[p]) seen[p]=PARTY_CLR[p]; });
+  const leg = document.getElementById('map-legend');
+  leg.innerHTML = Object.entries(seen).map(([p,c])=>
+    `<div class="ml-i"><div class="ml-dot" style="background:${c}"></div>${p}</div>`
+  ).join('');
 }
 
-async function fetchOneConst(id) {
-  const url = ECI_BASE + `statewiseS25${id}.htm`;
-  const proxies = [
-    `https://corsproxy.io/?${encodeURIComponent(url)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-  ];
-  for (const proxy of proxies) {
-    try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), 8000);
-      const res = await fetch(proxy, { signal: ctrl.signal });
-      clearTimeout(t);
-      if (res.ok) {
-        const text = await res.text();
-        if (text.length > 200) return text;
-      }
-    } catch {}
-  }
-  return null;
-}
-
-async function loadSeatMap() {
-  if (_seatMapDone || _fetchingMap) return;
-  _fetchingMap = true;
-
-  const ids = Array.from({length:294}, (_,i)=>(i+1).toString().padStart(3,'0'));
-  const BATCH = 5;  // small batch
-  let done = 0, colored = 0;
-
-  document.getElementById('map-st').textContent = '⏳ Constituency data fetch ho raha hai (0/294)...';
-
-  for (let i = 0; i < ids.length; i += BATCH) {
-    const batch = ids.slice(i, i+BATCH);
-    await Promise.all(batch.map(async id => {
-      const html = await fetchOneConst(id);
-      if (html) {
-        const party = parseConstHtml(html);
-        _seatMap[id] = party;
-        if (party !== 'OTH') colored++;
-      }
-    }));
-    done += batch.length;
-    document.getElementById('map-prog').textContent = `${done}/294`;
+// Load GeoJSON once, then color
+async function loadMapData(seatMap) {
+  document.getElementById('map-st').textContent = 'GeoJSON load ho raha hai...';
+  try {
+    if (!geoData) {
+      const res = await fetch('./data/wb-ac.geojson');
+      if (!res.ok) throw new Error(`GeoJSON fetch failed: ${res.status}`);
+      geoData = await res.json();
+    }
+    colorMap(seatMap || {});
+    const colored = Object.keys(seatMap||{}).length;
     document.getElementById('map-st').textContent =
-      `⏳ ${done}/294 fetch ho gaya — ${colored} colored`;
-
-    // Update map every 25 seats
-    if (done % 25 === 0 && colored > 0) renderMap(_seatMap);
-
-    // Delay between batches to be gentle on proxies
-    await new Promise(r => setTimeout(r, 500));
+      colored > 0 ? `✅ ${colored} constituencies colored` : '✅ West Bengal map loaded';
+  } catch(e) {
+    console.error('Map error:', e);
+    document.getElementById('map-st').textContent = `⚠️ Map error: ${e.message}`;
   }
-
-  _seatMapDone = true;
-  _fetchingMap = false;
-  renderMap(_seatMap);
-  document.getElementById('map-prog').textContent = `${colored}/294`;
-  document.getElementById('map-st').textContent =
-    colored > 0 ? `✅ ${colored} constituencies mapped` : '⚠️ Map data unavailable (ECI restricted)';
 }
 
 // ══════════════════════════════════════════
-//  PARSE PARTY PAGE
+//  PARTY PAGE PARSE
 // ══════════════════════════════════════════
 function parsePartyPage(html) {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const doc = new DOMParser().parseFromString(html,'text/html');
   const parties = [];
   for (const tbl of doc.querySelectorAll('table')) {
     const rows = tbl.rows;
     if (!rows.length) continue;
-    const hdr = rows[0]?.textContent||'';
-    if (!hdr.toLowerCase().includes('won')||!hdr.toLowerCase().includes('leading')) continue;
-    for (let i = 1; i < rows.length; i++) {
-      const cells = rows[i].cells;
-      if (cells.length < 4) continue;
-      const name = cells[0].textContent.trim();
-      if (!name||name.toLowerCase()==='total'||name.toLowerCase()==='party') continue;
-      const won     = parseInt(cells[1].textContent)||0;
-      const leading = parseInt(cells[2].textContent)||0;
-      const total   = parseInt(cells[3].textContent.replace(/\D/g,''))||0;
-      if (total > 0) parties.push({name,won,leading,total});
+    const hdr = (rows[0]?.textContent||'').toLowerCase();
+    if (!hdr.includes('won')||!hdr.includes('leading')) continue;
+    for (let i=1;i<rows.length;i++) {
+      const c=rows[i].cells;
+      if(c.length<4)continue;
+      const name=c[0].textContent.trim();
+      if(!name||name.toLowerCase()==='total'||name.toLowerCase()==='party')continue;
+      const won=parseInt(c[1].textContent)||0;
+      const leading=parseInt(c[2].textContent)||0;
+      const total=parseInt(c[3].textContent.replace(/\D/g,''))||0;
+      if(total>0)parties.push({name,won,leading,total});
     }
-    if (parties.length) break;
+    if(parties.length)break;
   }
-  const bodyTxt = doc.body?.textContent||'';
-  const ts = (bodyTxt.match(/Last Updated at\s+(.+)/i)||[])[1]||'';
-  const sorted = parties.sort((a,b)=>b.total-a.total);
+  const body=doc.body?.textContent||'';
+  const ts=(body.match(/Last Updated at\s+(.+)/i)||[])[1]||'';
+  const sorted=parties.sort((a,b)=>b.total-a.total);
   return {parties:sorted,total_seats:294,total_declared:sorted.reduce((s,p)=>s+p.total,0),last_updated:ts.replace(/\s+/g,' ').trim()};
 }
 
 async function fetchPartyTotals() {
   const res = await fetch(`${API}/api/party`);
-  const html = await res.text();
-  return parsePartyPage(html);
+  if(!res.ok)throw new Error('party fetch failed');
+  return parsePartyPage(await res.text());
 }
 
 // ══════════════════════════════════════════
-//  RENDER
+//  RENDER DASHBOARD
 // ══════════════════════════════════════════
 function render(d) {
-  if (!d||!d.parties||!d.parties.length) return;
-  const {parties,total_seats:TS=294,total_declared:TD=0,last_updated:LU=''} = d;
-  const ldr = parties[0];
-  document.getElementById('s-dec').textContent = TD;
-  document.getElementById('s-ldr').textContent = ldr?getAbbr(ldr.name):'—';
-  document.getElementById('s-ldr-s').textContent = ldr?`${ldr.total} seats mein aage`:'seats';
-  document.getElementById('s-upd').textContent = LU||'Live';
-  document.getElementById('hdr-sub').textContent = `294 Seats | Majority: 148 | Ghoshit: ${TD}`;
-  document.getElementById('ftr-upd').textContent = 'Last updated: '+(LU||new Date().toLocaleTimeString('en-IN'));
-  if (ldr) {
+  if(!d||!d.parties||!d.parties.length)return;
+  const{parties,total_seats:TS=294,total_declared:TD=0,last_updated:LU=''}=d;
+  const ldr=parties[0];
+
+  document.getElementById('s-dec').textContent=TD;
+  document.getElementById('s-ldr').textContent=ldr?getAbbr(ldr.name):'—';
+  document.getElementById('s-ldr-s').textContent=ldr?`${ldr.total} seats mein aage`:'seats';
+  document.getElementById('s-upd').textContent=LU||'Live';
+  document.getElementById('hdr-sub').textContent=`294 Seats | Majority: 148 | Ghoshit: ${TD}`;
+  document.getElementById('ftr-upd').textContent='Last updated: '+(LU||new Date().toLocaleTimeString('en-IN'));
+
+  if(ldr){
     const c=getClr(ldr.name),pct=Math.min(100,(ldr.total/TS)*100);
     const fill=document.getElementById('maj-fill');
     fill.style.background=`linear-gradient(90deg,${c}99,${c})`;
     fill.style.boxShadow=`0 0 18px ${c}40`;
     document.getElementById('maj-ldr').textContent=`${getAbbr(ldr.name)} — ${ldr.total} seats | ${ldr.total>=148?'✅ Bahumat Hasi!':'⚠️ Bahumat se '+(148-ldr.total)+' door'}`;
+    document.getElementById('map-ldr-badge').textContent=getAbbr(ldr.name)+' '+ldr.total;
+    document.getElementById('map-ldr-badge').style.color=c;
     setTimeout(()=>{fill.style.width=pct+'%';document.getElementById('maj-ft').textContent=ldr.total;},100);
   }
+
+  // Party cards
   const grid=document.getElementById('pgrid');grid.innerHTML='';
   parties.slice(0,8).forEach((p,i)=>{
     const c=getClr(p.name,i),logo=getLogo(p.name,c,i),abbr=getAbbr(p.name),fname=getBase(p.name);
@@ -432,6 +399,8 @@ function render(d) {
     grid.appendChild(el);
   });
   setTimeout(()=>document.querySelectorAll('.pc-bf').forEach(e=>{e.style.width=e.dataset.w+'%';}),200);
+
+  // Distribution bar
   const db=document.getElementById('dist-bar'),dl=document.getElementById('dist-leg');
   db.innerHTML='';dl.innerHTML='';document.getElementById('dd').textContent=TD;
   parties.forEach((p,i)=>{
@@ -456,6 +425,8 @@ function render(d) {
     li.innerHTML=`<div class="dl-d" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)"></div><span>Baaki</span>&nbsp;<strong style="color:var(--t2)">${und}</strong>`;
     dl.appendChild(li);
   }
+
+  // Table
   const tb=document.getElementById('tbl-body');tb.innerHTML='';
   let tw=0,tl=0,tt=0;
   parties.forEach((p,i)=>{
@@ -470,35 +441,29 @@ function render(d) {
   document.getElementById('tbl-tot').style.display='grid';
 }
 
-function getFallback() {
-  return {
-    parties:[
-      {name:'Bharatiya Janata Party - BJP',   won:48,leading:156,total:204},
-      {name:'All India Trinamool Congress - AITC',won:21,leading:62,total:83},
-      {name:'Indian National Congress - INC',  won:1, leading:1, total:2},
-      {name:'Aam Janata Unnayan party - AJUP', won:2, leading:0, total:2},
-      {name:'Communist Party of India (Marxist) - CPI(M)',won:0,leading:1,total:1},
-      {name:'All India Secular Front - AISF',  won:0, leading:1, total:1},
-    ],
-    total_seats:294,total_declared:293,
-    last_updated:'Cached data — live fetch ho raha hai'
-  };
-}
+function getFallback(){return{parties:[
+  {name:'Bharatiya Janata Party - BJP',   won:66,leading:138,total:204},
+  {name:'All India Trinamool Congress - AITC',won:26,leading:57,total:83},
+  {name:'Indian National Congress - INC', won:1, leading:1, total:2},
+  {name:'Aam Janata Unnayan party - AJUP',won:2, leading:0, total:2},
+  {name:'Communist Party of India (Marxist) - CPI(M)',won:0,leading:1,total:1},
+  {name:'All India Secular Front - AISF', won:0, leading:1, total:1},
+],total_seats:294,total_declared:293,last_updated:'Cached — live fetch ho raha hai'}}
 
-function showErr(msg){
-  const el=document.getElementById('err-bar');
-  el.innerHTML=`⚠ ${msg}`;el.style.display='block';
-  setTimeout(()=>{el.style.display='none';},8000);
-}
+function showErr(msg){const el=document.getElementById('err-bar');el.innerHTML=`⚠ ${msg}`;el.style.display='block';setTimeout(()=>el.style.display='none',8000)}
 
 // ══════════════════════════════════════════
-//  TIMER & LOAD
+//  TIMER
 // ══════════════════════════════════════════
 let timer,secs=60,isFetching=false;
-
 function tick(){secs--;document.getElementById('cd').textContent=secs;if(secs<=0){secs=60;loadData(false);}}
 function startTimer(){clearInterval(timer);secs=60;document.getElementById('cd').textContent=60;timer=setInterval(tick,1000);}
 function manualRefresh(){if(isFetching)return;clearInterval(timer);loadData(false);}
+
+// ══════════════════════════════════════════
+//  MAIN LOAD
+// ══════════════════════════════════════════
+let mapLoaded = false;
 
 async function loadData(showLoad=true) {
   if(isFetching){startTimer();return;}
@@ -506,10 +471,17 @@ async function loadData(showLoad=true) {
 
   if(showLoad){
     render(getFallback());
-    initMap();
-    renderMap({});
+    // Show app FIRST, then init map
     document.getElementById('loading').style.display='none';
     document.getElementById('app').style.display='block';
+    // Init map after app is visible (important!)
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        initLeafletMap();
+        // Load WB map without party colors first
+        loadMapData({});
+      });
+    });
   }
 
   startTimer();
@@ -522,20 +494,21 @@ async function loadData(showLoad=true) {
     render(partyData);
     isFetching=false;
 
-    // Start seatmap fetch once (browser side)
-    if (!_seatMapDone && !_fetchingMap) {
-      setTimeout(loadSeatMap, 3000);
+    // Map only reloads once (no constituency colors - ECI pages 404)
+    if(!mapLoaded){
+      mapLoaded=true;
+      // Show WB map with leading party color for whole state (visual indicator)
+      // Since constituency pages return 404 from ECI, we show outline only
     }
   } catch(e) {
-    showErr('Live data nahi aaya — cached data dikh raha hai. Auto-refresh try karega.');
+    showErr('Live data nahi aaya — auto-refresh try karega.');
     isFetching=false;
   }
 }
 
 function trackVisit(){
   const k='wb26_vc',n=parseInt(localStorage.getItem(k)||'0')+1;
-  localStorage.setItem(k,n);
-  document.getElementById('vc-n').textContent=n.toLocaleString('en-IN');
+  localStorage.setItem(k,n);document.getElementById('vc-n').textContent=n.toLocaleString('en-IN');
 }
 
 trackVisit();

@@ -14,7 +14,6 @@ async function fetchECI(path) {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0.0.0 Safari/537.36',
         'Accept': 'text/html,*/*',
-        'Accept-Language': 'en-IN,en;q=0.9',
         'Referer': 'https://results.eci.gov.in/',
       },
     });
@@ -22,65 +21,72 @@ async function fetchECI(path) {
     console.log(`[${res.status}] ${path} len=${text.length}`);
     if (res.status === 200 && text.length > 200 && !text.includes('Access Denied')) return text;
     return null;
-  } catch (e) {
-    console.warn('fetchECI:', e.message);
-    return null;
-  }
+  } catch (e) { console.warn('fetchECI:', e.message); return null; }
 }
 
 // ══════════════════════════════════════════
-// ROBUST ECI PARSER
-// Works row-by-row, no DOM needed
+// PARSE PARTY PAGE — multiple strategies
 // ══════════════════════════════════════════
 function parseECI(html) {
+  if (!html) return null;
+
+  // Remove scripts/styles to clean the HTML
+  const clean = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '');
+
   const parties = [];
 
-  // Extract all <tr> blocks
-  const trBlocks = [];
-  const trRe = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-  let m;
-  while ((m = trRe.exec(html)) !== null) trBlocks.push(m[1]);
+  // Strategy 1: Find Won/Leading/Total table
+  const rows = clean.split(/<tr[^>]*>/i).slice(1);
+  let headerFound = false;
 
-  let headerIdx = -1;
-  for (let i = 0; i < trBlocks.length; i++) {
-    const t = trBlocks[i].replace(/<[^>]+>/g, ' ').toLowerCase();
-    if (t.includes('won') && t.includes('leading') && t.includes('total')) {
-      headerIdx = i;
-      break;
-    }
-  }
+  for (const row of rows) {
+    const cellText = row
+      .replace(/<[^>]+>/g, '\t')
+      .split('\t')
+      .map(s => s.replace(/&amp;/g,'&').replace(/&nbsp;/g,' ').trim())
+      .filter(Boolean);
 
-  if (headerIdx === -1) {
-    console.warn('Table header not found in ECI HTML');
-    console.log('HTML snippet:', html.slice(0, 1000));
-    return null;
-  }
-
-  for (let i = headerIdx + 1; i < trBlocks.length; i++) {
-    // Extract <td> cells
-    const cells = [];
-    const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
-    let cm;
-    while ((cm = tdRe.exec(trBlocks[i])) !== null) {
-      const val = cm[1]
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-      cells.push(val);
+    if (!headerFound) {
+      const joined = cellText.join(' ').toLowerCase();
+      if (joined.includes('won') && (joined.includes('leading') || joined.includes('trend'))) {
+        headerFound = true;
+      }
+      continue;
     }
 
-    if (cells.length < 4) continue;
-    const name = cells[0];
+    if (cellText.length < 3) continue;
+    const name = cellText[0];
     if (!name || name.toLowerCase() === 'total' || name.toLowerCase() === 'party') continue;
+    if (name.length < 3) continue;
 
-    const won     = parseInt(cells[1].replace(/\D/g, '')) || 0;
-    const leading = parseInt(cells[2].replace(/\D/g, '')) || 0;
-    const total   = parseInt(cells[3].replace(/\D/g, '')) || 0;
+    // Find numeric cells
+    const nums = cellText.slice(1).map(c => parseInt(c.replace(/\D/g,''))).filter(n => !isNaN(n));
+    if (nums.length < 1) continue;
+
+    const won     = nums[0] || 0;
+    const leading = nums[1] || 0;
+    const total   = nums[2] || (won + leading);
 
     if (total > 0 || won > 0) {
-      parties.push({ name, won, leading, total: total || won + leading });
+      parties.push({ name, won, leading, total: Math.max(total, won + leading) });
+    }
+    if (parties.length > 20) break; // Safety stop
+  }
+
+  if (parties.length === 0) {
+    // Strategy 2: Look for party name + number pattern in the visual cards
+    // ECI uses colored div cards: <b>BJP</b>...<b>207</b>
+    const cardPat = /(?:BJP|AITC|INC|CPI\(M\)|AJUP|AISF|BSP|RSP|BGPM)[^\d]{0,100}?(\d{1,3})/gi;
+    let m;
+    while ((m = cardPat.exec(html)) !== null) {
+      const abbr = m[0].match(/^[A-Z()]+/)[0];
+      const num = parseInt(m[1]);
+      if (num > 0 && num <= 294) {
+        const existing = parties.find(p => p.name.includes(abbr));
+        if (!existing) parties.push({ name: abbr, won: num, leading: 0, total: num });
+      }
     }
   }
 
@@ -88,41 +94,67 @@ function parseECI(html) {
 
   parties.sort((a, b) => b.total - a.total);
 
-  // Extract timestamp
-  const tsMatch = html.match(/Last Updated(?:\s+at)?\s*[:\-]?\s*([^<\n]{5,50})/i);
+  const tsMatch = html.match(/Last Updated[^<]{0,10}:?\s*([^<\n]{5,60})/i);
   const last_updated = tsMatch ? tsMatch[1].trim().replace(/\s+/g, ' ') : '';
 
-  const total_declared = parties.reduce((s, p) => s + p.total, 0);
+  return {
+    parties,
+    total_declared: parties.reduce((s, p) => s + p.total, 0),
+    last_updated
+  };
+}
 
-  console.log(`Parsed ${parties.length} parties. Leader: ${parties[0]?.name} ${parties[0]?.total}`);
-  return { parties, total_declared, last_updated };
+// Try to extract constituency→party map from ECI page JS
+function extractSeatMap(html) {
+  const seatMap = {};
+  // Look for JSON arrays like [{ac:1,party:"BJP",...}] or similar
+  const jsonPat = /\[\s*\{[^[\]]{20,5000}\}\s*\]/g;
+  let m;
+  while ((m = jsonPat.exec(html)) !== null) {
+    try {
+      const arr = JSON.parse(m[0]);
+      if (!Array.isArray(arr) || arr.length === 0) continue;
+      const first = arr[0];
+      const hasAC = 'ac_no' in first || 'AC_NO' in first || 'id' in first;
+      const hasParty = 'party' in first || 'PARTY' in first;
+      if (hasAC && hasParty) {
+        arr.forEach(item => {
+          const id = String(item.ac_no || item.AC_NO || item.id || '').padStart(3, '0');
+          const p = (item.party || item.PARTY || '').toUpperCase();
+          if (id !== '000' && p) seatMap[id] = p;
+        });
+        if (Object.keys(seatMap).length > 10) break;
+      }
+    } catch {}
+  }
+  return Object.keys(seatMap).length > 10 ? seatMap : null;
 }
 
 // ══════════════════════════════════════════
-// CACHE — persists across ECI blocks
+// CACHE
 // ══════════════════════════════════════════
 let cache = { data: null, html: null, ts: 0 };
 
 async function refresh() {
-  console.log('Refreshing from ECI...');
   const html = await fetchECI('partywiseresult-S25.htm');
   if (!html) { console.warn('ECI fetch failed'); return false; }
 
   const parsed = parseECI(html);
   if (parsed && parsed.parties.length > 0) {
     cache = { data: parsed, html, ts: Date.now() };
-    console.log(`✅ Cached: ${parsed.parties[0]?.name} ${parsed.parties[0]?.total}, total_declared=${parsed.total_declared}`);
+    console.log(`✅ ${parsed.parties[0]?.name} ${parsed.parties[0]?.total}, declared=${parsed.total_declared}`);
     return true;
   }
-  console.warn('Parse failed');
+  console.warn('Parse failed. Snippet:', html.slice(0, 500));
   return false;
 }
 
-// Refresh every 2 min in background
-setInterval(refresh, 120_000);
+setInterval(refresh, 90_000);
 refresh();
 
-// ── Endpoints ──────────────────────────────
+// ══════════════════════════════════════════
+// ENDPOINTS
+// ══════════════════════════════════════════
 app.get('/api/results', async (req, res) => {
   if (!cache.data || Date.now() - cache.ts > 90_000) await refresh();
   if (cache.data) return res.json(cache.data);
@@ -135,24 +167,16 @@ app.get('/api/party', async (req, res) => {
   res.status(500).send('ECI unavailable');
 });
 
-// Status check
-app.get('/api/status', (req, res) => {
-  res.json({
-    cached: !!cache.data,
-    age_sec: cache.ts ? Math.round((Date.now() - cache.ts) / 1000) : null,
-    leader: cache.data?.parties?.[0]?.name || null,
-    leader_total: cache.data?.parties?.[0]?.total || null,
-    total_declared: cache.data?.total_declared || null,
-    last_updated: cache.data?.last_updated || null,
-    parties_count: cache.data?.parties?.length || 0,
-  });
-});
+app.get('/api/status', (req, res) => res.json({
+  cached: !!cache.data, age_sec: cache.ts ? Math.round((Date.now()-cache.ts)/1000) : null,
+  leader: cache.data?.parties?.[0]?.name, leader_total: cache.data?.parties?.[0]?.total,
+  total_declared: cache.data?.total_declared, parties_count: cache.data?.parties?.length||0,
+}));
 
-// Raw HTML dump for debugging
 app.get('/api/raw', async (req, res) => {
   const html = await fetchECI('partywiseresult-S25.htm');
-  res.setHeader('Content-Type', 'text/plain');
-  res.send(html ? `OK len=${html.length}\n\n${html.slice(0, 8000)}` : 'FAILED');
+  res.setHeader('Content-Type','text/plain');
+  res.send(html ? `OK len=${html.length}\n\n${html.slice(0,8000)}` : 'FAILED');
 });
 
 const PORT = process.env.PORT || 3000;

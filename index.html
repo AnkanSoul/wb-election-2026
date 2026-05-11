@@ -9,23 +9,17 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#040c1e;--card:#091828;
-  --b1:rgba(70,120,255,.1);--b2:rgba(70,120,255,.22);
-  --t1:#ddeaff;--t2:#7a9ec8;--t3:#3a5872;
-  --red:#ef4444;--saffron:#FF6600;--blue:#3b82f6
-}
+:root{--bg:#040c1e;--card:#091828;--b1:rgba(70,120,255,.1);--t1:#ddeaff;--t2:#7a9ec8;--t3:#3a5872;--red:#ef4444;--saffron:#FF6600;--blue:#3b82f6}
 body{background:var(--bg);color:var(--t1);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
 a{color:var(--blue);text-decoration:none}
 #loading{position:fixed;inset:0;background:var(--bg);z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
 .ld-ring{width:50px;height:50px;border:3px solid rgba(70,120,255,.22);border-top-color:#4a7ae2;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .ld-t{font-size:15px;color:var(--t2)}.ld-s{font-size:12px;color:var(--t3);text-align:center;padding:0 20px}
-/* HEADER */
 .hdr{background:linear-gradient(135deg,#070e2a 0%,#0e1f5a 55%,#070e2a 100%);border-bottom:1px solid rgba(70,120,255,.14);position:sticky;top:0;z-index:9999}
 .hdr-i{max-width:1200px;margin:0 auto;padding:15px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
 .hdr-tag{font-size:10px;text-transform:uppercase;letter-spacing:2.5px;color:#4a6a9a;font-weight:700;margin-bottom:3px}
-.hdr-title{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.4px}
+.hdr-title{font-size:20px;font-weight:800;color:#fff}
 .hdr-title em{color:var(--saffron);font-style:normal}
 .hdr-sub{font-size:11px;color:#405a82;margin-top:2px}
 .hdr-r{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
@@ -34,16 +28,13 @@ a{color:var(--blue);text-decoration:none}
 @keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.2;transform:scale(.6)}}
 .rf-row{display:flex;align-items:center;gap:8px}
 .rf-info{font-size:11px;color:var(--t3)}.cd{color:#5a9af2;font-weight:700}
-.rf-btn{background:rgba(70,120,255,.1);border:1px solid rgba(70,120,255,.25);color:#6aaaf8;font-size:11px;font-weight:600;padding:4px 12px;border-radius:6px;cursor:pointer;transition:background .2s}
-.rf-btn:hover{background:rgba(70,120,255,.22)}
-/* MAIN */
+.rf-btn{background:rgba(70,120,255,.1);border:1px solid rgba(70,120,255,.25);color:#6aaaf8;font-size:11px;font-weight:600;padding:4px 12px;border-radius:6px;cursor:pointer}
 .main{max-width:1200px;margin:0 auto;padding:18px 18px 30px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-bottom:16px}
 .stat{background:var(--card);border:1px solid var(--b1);border-radius:10px;padding:12px 15px}
 .sl{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--t3);font-weight:700}
 .sv{font-size:22px;font-weight:900;color:var(--t1);letter-spacing:-.8px;line-height:1;margin-top:4px}
 .ss{font-size:11px;color:var(--t2);margin-top:3px}
-/* MAJORITY */
 .maj{background:var(--card);border:1px solid var(--b1);border-radius:12px;padding:15px 20px;margin-bottom:16px}
 .maj-hd{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .maj-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3)}
@@ -54,9 +45,7 @@ a{color:var(--blue);text-decoration:none}
 .maj-mk{position:absolute;top:0;bottom:0;left:50.34%;width:2px;background:rgba(255,255,255,.3)}
 .maj-mk::after{content:'148';position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,.45);font-weight:700}
 .maj-ax{display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:var(--t3)}
-/* TWO COL */
 .cols{display:grid;grid-template-columns:1fr 300px;gap:16px;margin-bottom:16px;align-items:start}
-/* PARTY CARDS */
 .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:10px;margin-bottom:16px}
 .pc{background:var(--card);border:1px solid var(--b1);border-radius:11px;padding:13px 12px;position:relative;overflow:hidden;transition:transform .2s}
 .pc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--c)}
@@ -69,15 +58,10 @@ a{color:var(--blue);text-decoration:none}
 .pc-bk b{color:var(--t1)}
 .pc-bar{height:3px;background:rgba(255,255,255,.07);border-radius:2px;margin-top:10px;overflow:hidden}
 .pc-bf{height:100%;background:var(--c);border-radius:2px;width:0;transition:width 1.2s ease}
-/* MAP */
 .map-card{background:var(--card);border:1px solid var(--b1);border-radius:12px;overflow:hidden}
 .map-hd{padding:11px 15px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center}
 #map{height:500px;width:100%;display:block}
-.map-leg{padding:8px 12px;border-top:1px solid var(--b1);display:flex;flex-wrap:wrap;gap:8px}
-.ml-i{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t2)}
-.ml-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
 .map-st{padding:6px 12px;font-size:11px;color:var(--t3);border-top:1px solid var(--b1);text-align:center}
-/* DIST */
 .dist{background:var(--card);border:1px solid var(--b1);border-radius:12px;padding:15px 20px;margin-bottom:16px}
 .dist-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);margin-bottom:11px}
 .dist-bar{height:28px;border-radius:8px;overflow:hidden;display:flex;margin-bottom:10px}
@@ -85,7 +69,6 @@ a{color:var(--blue);text-decoration:none}
 .dist-leg{display:flex;flex-wrap:wrap;gap:12px}
 .dl-i{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t2)}
 .dl-d{width:10px;height:10px;border-radius:2px;flex-shrink:0}
-/* TABLE */
 .tbl-card{background:var(--card);border:1px solid var(--b1);border-radius:12px;overflow:hidden;margin-bottom:16px}
 .tbl-ttl{padding:12px 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);border-bottom:1px solid var(--b1)}
 .tbl-h{display:grid;grid-template-columns:1fr 70px 82px 70px;padding:8px 20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.04)}
@@ -100,7 +83,6 @@ a{color:var(--blue);text-decoration:none}
 .tbl-l{text-align:center;font-size:15px;font-weight:800;color:#3b82f6}
 .tbl-t{text-align:center;font-size:17px;font-weight:900;color:var(--t1)}
 .tbl-tot{display:grid;grid-template-columns:1fr 70px 82px 70px;padding:11px 20px;background:rgba(70,120,255,.06);border-top:1px solid rgba(70,120,255,.14);font-size:13px;font-weight:700;color:var(--t2)}
-/* FOOTER */
 .ftr{background:var(--card);border-top:1px solid var(--b1);padding:18px 22px}
 .ftr-i{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
 .ftr-s{font-size:12px;color:var(--t3)}.ftr-u{font-size:11px;color:var(--t3);margin-top:4px}
@@ -110,79 +92,52 @@ a{color:var(--blue);text-decoration:none}
 .vc-n{font-size:24px;font-weight:900;color:var(--t1);letter-spacing:-1px;line-height:1.1}
 .err-bar{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:#fca5a5;margin-bottom:14px;display:none}
 @media(max-width:860px){.cols{grid-template-columns:1fr}}
-@media(max-width:580px){
-  .hdr-i{padding:12px 14px}.hdr-title{font-size:17px}
-  .main{padding:12px 12px 22px}.pgrid{grid-template-columns:repeat(2,1fr)}
-  .tbl-h,.tbl-r,.tbl-tot{grid-template-columns:1fr 50px 64px 50px;padding:9px 12px}
-  #map{height:350px}
-}
+@media(max-width:580px){.hdr-i{padding:12px 14px}.hdr-title{font-size:17px}.main{padding:12px 12px 22px}.pgrid{grid-template-columns:repeat(2,1fr)}.tbl-h,.tbl-r,.tbl-tot{grid-template-columns:1fr 50px 64px 50px;padding:9px 12px}#map{height:350px}}
 </style>
 </head>
 <body>
-<div id="loading">
-  <div class="ld-ring"></div>
-  <div class="ld-t">Live data load ho raha hai...</div>
-  <div class="ld-s">Election Commission of India — results.eci.gov.in</div>
-</div>
-
+<div id="loading"><div class="ld-ring"></div><div class="ld-t">Live data load ho raha hai...</div><div class="ld-s">Election Commission of India — results.eci.gov.in</div></div>
 <div id="app" style="display:none">
-<header class="hdr">
-  <div class="hdr-i">
-    <div>
-      <div class="hdr-tag">Election Commission of India — West Bengal Vidhan Sabha</div>
-      <div class="hdr-title">Assembly Election <em>2026</em> — Live Results</div>
-      <div class="hdr-sub" id="hdr-sub">294 Total Seats | Majority: 148</div>
-    </div>
-    <div class="hdr-r">
-      <div class="live-p"><div class="live-d"></div>LIVE</div>
-      <div class="rf-row">
-        <div class="rf-info">Auto-refresh: <span class="cd" id="cd">60</span>s</div>
-        <button class="rf-btn" onclick="manualRefresh()">↻ Abhi Refresh</button>
-      </div>
+<header class="hdr"><div class="hdr-i">
+  <div>
+    <div class="hdr-tag">Election Commission of India — West Bengal Vidhan Sabha</div>
+    <div class="hdr-title">Assembly Election <em>2026</em> — Live Results</div>
+    <div class="hdr-sub" id="hdr-sub">294 Total Seats | Majority: 148</div>
+  </div>
+  <div class="hdr-r">
+    <div class="live-p"><div class="live-d"></div>LIVE</div>
+    <div class="rf-row">
+      <div class="rf-info">Auto-refresh: <span class="cd" id="cd">60</span>s</div>
+      <button class="rf-btn" onclick="manualRefresh()">↻ Abhi Refresh</button>
     </div>
   </div>
-</header>
-
+</div></header>
 <main class="main">
   <div class="err-bar" id="err-bar"></div>
   <div class="stats">
     <div class="stat"><div class="sl">Ghoshit Seats</div><div class="sv" id="s-dec">—</div><div class="ss">out of 294 total</div></div>
     <div class="stat"><div class="sl">Sabse Aage</div><div class="sv" id="s-ldr">—</div><div class="ss" id="s-ldr-s">seats</div></div>
     <div class="stat"><div class="sl">Bahumat Zaruri</div><div class="sv" style="color:var(--saffron)">148</div><div class="ss">simple majority</div></div>
-    <div class="stat"><div class="sl">Last Updated</div><div class="sv" style="font-size:12px;padding-top:5px;line-height:1.4" id="s-upd">—</div><div class="ss">ECI official</div></div>
+    <div class="stat"><div class="sl">Last Updated</div><div class="sv" style="font-size:11px;padding-top:6px;line-height:1.4" id="s-upd">—</div><div class="ss">ECI official</div></div>
   </div>
-
   <div class="maj">
-    <div class="maj-hd">
-      <div class="maj-ttl">Bahumat Meter — 148 Seats Chahiye</div>
-      <div class="maj-ldr" id="maj-ldr">Loading...</div>
-    </div>
-    <div class="maj-track">
-      <div class="maj-mk"></div>
-      <div class="maj-fill" id="maj-fill" style="width:0%"><span class="maj-ft" id="maj-ft"></span></div>
-    </div>
+    <div class="maj-hd"><div class="maj-ttl">Bahumat Meter — 148 Seats Chahiye</div><div class="maj-ldr" id="maj-ldr">Loading...</div></div>
+    <div class="maj-track"><div class="maj-mk"></div><div class="maj-fill" id="maj-fill" style="width:0%"><span class="maj-ft" id="maj-ft"></span></div></div>
     <div class="maj-ax"><span>0</span><span style="color:rgba(255,255,255,.25);font-weight:600">← Bahumat rekha 148 →</span><span>294</span></div>
   </div>
-
   <div class="cols">
     <div><div class="pgrid" id="pgrid"></div></div>
     <div class="map-card">
-      <div class="map-hd">
-        <span>West Bengal — Live Map</span>
-        <span id="map-badge" style="font-size:10px;font-weight:800"></span>
-      </div>
+      <div class="map-hd"><span>West Bengal — Live Map</span><span id="map-badge" style="font-size:10px;font-weight:800"></span></div>
       <div id="map"></div>
-      <div class="map-leg" id="map-leg"></div>
       <div class="map-st" id="map-st">Map load ho raha hai...</div>
     </div>
   </div>
-
   <div class="dist">
     <div class="dist-ttl">Seat Distribution — <span id="dd">0</span> / 294 Ghoshit</div>
     <div class="dist-bar" id="dist-bar"></div>
     <div class="dist-leg" id="dist-leg"></div>
   </div>
-
   <div class="tbl-card">
     <div class="tbl-ttl">Party-wise Results — Jeeta / Aage / Kul</div>
     <div class="tbl-h"><div>Dal / Party</div><div style="text-align:center">Jeeta</div><div style="text-align:center">Aage</div><div style="text-align:center">Kul</div></div>
@@ -195,169 +150,96 @@ a{color:var(--blue);text-decoration:none}
     </div>
   </div>
 </main>
-
-<footer class="ftr">
-  <div class="ftr-i">
-    <div>
-      <div class="ftr-s">Source: <a href="https://results.eci.gov.in/ResultAcGenMay2026/partywiseresult-S25.htm" target="_blank">Election Commission of India</a> — Auto-refresh every 60s</div>
-      <div class="ftr-u" id="ftr-upd">Last updated: —</div>
-    </div>
-    <div class="vc-box">
-      <div class="vc-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a7ae2" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
-      <div><div class="vc-lbl">Total Visitors</div><div class="vc-n" id="vc-n">—</div></div>
-    </div>
+<footer class="ftr"><div class="ftr-i">
+  <div>
+    <div class="ftr-s">Source: <a href="https://results.eci.gov.in/ResultAcGenMay2026/partywiseresult-S25.htm" target="_blank">Election Commission of India</a> — Auto-refresh every 60s</div>
+    <div class="ftr-u" id="ftr-upd">Last updated: —</div>
   </div>
-  <div class="vc-lbl" style="text-align:center;margin-top:8px;">Designed & Developed by Ankan Chakraborty</div>
+  <div class="vc-box">
+    <div class="vc-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4a7ae2" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+    <div><div class="vc-lbl">Total Visitors</div><div class="vc-n" id="vc-n">—</div></div>
+  </div>
+</div>
+<div class="vc-lbl" style="text-align:center;margin-top:8px;">Designed & Developed by Ankan Chakraborty</div>
 </footer>
 </div>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const API = 'https://wb-election-api.onrender.com';
-const LOGOS = {
-  BJP:`<img src="./assets/logos/bjp.png" style="width:100%;height:100%;object-fit:contain;">`,
-  AITC:`<img src="./assets/logos/aitc.png" style="width:100%;height:100%;object-fit:contain;">`,
-  'CPI(M)':`<img src="./assets/logos/cpim.png" style="width:100%;height:100%;object-fit:contain;">`,
-  BGPM:`<img src="./assets/logos/bgpm.webp" style="width:100%;height:100%;object-fit:contain;">`,
-  AJUP:`<img src="./assets/logos/ajup.png" style="width:100%;height:100%;object-fit:contain;">`,
-  INC:`<img src="./assets/logos/inc.png" style="width:100%;height:100%;object-fit:contain;">`,
-  AISF:`<img src="./assets/logos/aisf.png" style="width:100%;height:100%;object-fit:contain;">`,
-};
-const CLR = {BJP:'#FF6600',AITC:'#1565C0','CPI(M)':'#B71C1C',BGPM:'#7B1FA2',AJUP:'#00695C',INC:'#0D47A1',BSP:'#4A148C',RSP:'#C62828',CPI:'#D32F2F',AISF:'#E91E63',GNLF:'#795548'};
+const API='https://wb-election-api.onrender.com';
+const LOGOS={BJP:`<img src="./assets/logos/bjp.png" style="width:100%;height:100%;object-fit:contain;">`,AITC:`<img src="./assets/logos/aitc.png" style="width:100%;height:100%;object-fit:contain;">`,'CPI(M)':`<img src="./assets/logos/cpim.png" style="width:100%;height:100%;object-fit:contain;">`,BGPM:`<img src="./assets/logos/bgpm.webp" style="width:100%;height:100%;object-fit:contain;">`,AJUP:`<img src="./assets/logos/ajup.png" style="width:100%;height:100%;object-fit:contain;">`,INC:`<img src="./assets/logos/inc.png" style="width:100%;height:100%;object-fit:contain;">`,AISF:`<img src="./assets/logos/aisf.png" style="width:100%;height:100%;object-fit:contain;">`};
+const CLR={BJP:'#FF6600',AITC:'#1565C0','CPI(M)':'#B71C1C',BGPM:'#7B1FA2',AJUP:'#00695C',INC:'#0D47A1',BSP:'#4A148C',RSP:'#C62828',CPI:'#D32F2F',AISF:'#E91E63'};
 const POOL=['#1976D2','#C2185B','#00796B','#E65100','#512DA8','#2E7D32','#0288D1','#795548'];
-
 function gc(n,i=0){const u=(n||'').toUpperCase();for(const[k,c]of Object.entries(CLR))if(u.includes(k))return c;return POOL[i%POOL.length]}
 function ga(n){const m=(n||'').match(/[-–]\s*([A-Z()\s]{2,})\s*$/);if(m)return m[1].trim();return(n||'').split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,5)||'OTH'}
 function gb(n){return(n||'').replace(/\s*[-–][^-–]+$/,'').trim()}
 function gl(n,c,i){const u=(n||'').toUpperCase();for(const[k,s]of Object.entries(LOGOS))if(u.includes(k))return s;const a=ga(n).slice(0,3);return`<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="23" fill="${c}1a" stroke="${c}" stroke-width="2"/><text x="24" y="30" text-anchor="middle" font-size="13" font-weight="900" fill="${c}" font-family="system-ui">${a}</text></svg>`}
 
-// ══════════════════════════════════════════
-//  MAP
-// ══════════════════════════════════════════
-let lmap=null, gLayer=null, geoCache=null;
-
+// MAP — fixed visibility
+let lmap=null,gLayer=null,geo=null;
 function initMap(){
   if(lmap)return;
   lmap=L.map('map',{center:[23.5,87.5],zoom:7});
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OSM © CARTO',subdomains:'abcd',maxZoom:19}).addTo(lmap);
 }
-
-function applyColors(seatMap){
-  if(!lmap||!geoCache)return;
+async function drawMap(){
+  if(!lmap)return;
+  if(!geo){
+    try{
+      const r=await fetch('./data/wb-ac.geojson');
+      if(!r.ok)throw new Error('GeoJSON '+r.status);
+      geo=await r.json();
+    }catch(e){
+      document.getElementById('map-st').textContent='⚠️ Map data load nahi hua: '+e.message;
+      return;
+    }
+  }
   if(gLayer){gLayer.remove();gLayer=null;}
-  gLayer=L.geoJSON(geoCache,{
-    style:f=>{
-      const id=String(f.properties.AC_NO).padStart(3,'0');
-      const p=seatMap[id];
-      return p ? {fillColor:CLR[p]||'#888',fillOpacity:0.88,color:'#0a1a2e',weight:0.8}
-               : {fillColor:'#1a3050',fillOpacity:0.35,color:'#0a1a2e',weight:0.5};
-    },
+  gLayer=L.geoJSON(geo,{
+    style:()=>({
+      fillColor:'#2a5298',   // visible blue on dark bg
+      fillOpacity:0.7,
+      color:'#ffffff',        // white borders — clearly visible
+      weight:1
+    }),
     onEachFeature:(f,layer)=>{
-      const id=String(f.properties.AC_NO).padStart(3,'0');
       const name=f.properties.AC_NAME||'Seat';
-      const p=seatMap[id]||'—';
-      layer.bindTooltip(`<b>${name}</b><br>${p}`,{sticky:true});
-      layer.on('mouseover',function(){this.setStyle({fillOpacity:1,weight:2});});
+      const no=f.properties.AC_NO||'';
+      layer.bindTooltip(`<b>${name}</b><br>AC No: ${no}`,{sticky:true});
+      layer.on('mouseover',function(){this.setStyle({fillOpacity:1,fillColor:'#4a7ae2'});});
       layer.on('mouseout',function(){gLayer.resetStyle(this);});
     }
   }).addTo(lmap);
   lmap.fitBounds(gLayer.getBounds(),{padding:[8,8]});
-  setTimeout(()=>lmap.invalidateSize(),200);
-
-  // Legend
-  const seen={};
-  Object.values(seatMap).forEach(p=>{if(p&&CLR[p])seen[p]=CLR[p];});
-  document.getElementById('map-leg').innerHTML=
-    Object.entries(seen).map(([p,c])=>`<div class="ml-i"><div class="ml-dot" style="background:${c}"></div>${p}</div>`).join('');
+  setTimeout(()=>lmap.invalidateSize(),300);
+  const count=geo.features?.length||0;
+  document.getElementById('map-st').textContent=`✅ West Bengal — ${count} constituencies`;
 }
 
-async function loadGeoAndColor(seatMap){
-  document.getElementById('map-st').textContent='GeoJSON load ho raha hai...';
-  try{
-    if(!geoCache){
-      const r=await fetch('./data/wb-ac.geojson');
-      if(!r.ok)throw new Error('GeoJSON '+r.status);
-      geoCache=await r.json();
-    }
-    applyColors(seatMap||{});
-    const n=Object.keys(seatMap||{}).length;
-    document.getElementById('map-st').textContent=n>0?`✅ ${n} constituencies colored`:'✅ West Bengal map loaded';
-  }catch(e){
-    document.getElementById('map-st').textContent='⚠️ '+e.message;
-  }
+// DATA
+async function fetchResults(){
+  const r=await fetch(`${API}/api/results`);
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const d=await r.json();
+  if(d.error)throw new Error(d.error);
+  return d;
 }
 
-// ══════════════════════════════════════════
-//  SEATMAP FROM SERVER
-// ══════════════════════════════════════════
-let _sm=null, _smLoading=false;
-
-async function fetchSeatMap(){
-  if(_sm)return _sm;
-  if(_smLoading)return null;
-  _smLoading=true;
-  document.getElementById('map-st').textContent='⏳ Constituency data server se aa raha hai...';
-  try{
-    const r=await fetch(`${API}/api/seatmap`);
-    if(!r.ok)throw new Error('seatmap '+r.status);
-    const d=await r.json();
-    if(d.count>0){
-      _sm=d.seatMap;
-      document.getElementById('map-badge').textContent=d.count+' seats';
-      return _sm;
-    }
-  }catch(e){console.warn('seatmap failed:',e);}
-  finally{_smLoading=false;}
-  return null;
-}
-
-// ══════════════════════════════════════════
-//  PARTY PAGE
-// ══════════════════════════════════════════
-function parsePP(html){
-  const doc=new DOMParser().parseFromString(html,'text/html');
-  const ps=[];
-  for(const t of doc.querySelectorAll('table')){
-    const rows=t.rows;if(!rows.length)continue;
-    const h=(rows[0]?.textContent||'').toLowerCase();
-    if(!h.includes('won')||!h.includes('leading'))continue;
-    for(let i=1;i<rows.length;i++){
-      const c=rows[i].cells;if(c.length<4)continue;
-      const name=c[0].textContent.trim();
-      if(!name||name.toLowerCase()==='total'||name.toLowerCase()==='party')continue;
-      const won=parseInt(c[1].textContent)||0,leading=parseInt(c[2].textContent)||0,total=parseInt(c[3].textContent.replace(/\D/g,''))||0;
-      if(total>0)ps.push({name,won,leading,total});
-    }
-    if(ps.length)break;
-  }
-  const body=doc.body?.textContent||'',ts=(body.match(/Last Updated at\s+(.+)/i)||[])[1]||'';
-  const sorted=ps.sort((a,b)=>b.total-a.total);
-  return{parties:sorted,total_seats:294,total_declared:sorted.reduce((s,p)=>s+p.total,0),last_updated:ts.replace(/\s+/g,' ').trim()};
-}
-
-async function fetchParty(){
-  const r=await fetch(`${API}/api/party`);
-  if(!r.ok)throw new Error('party '+r.status);
-  return parsePP(await r.text());
-}
-
-// ══════════════════════════════════════════
-//  RENDER
-// ══════════════════════════════════════════
 function render(d){
   if(!d||!d.parties||!d.parties.length)return;
-  const{parties,total_seats:TS=294,total_declared:TD=0,last_updated:LU=''}=d,ldr=parties[0];
+  const{parties,total_declared:TD=0,last_updated:LU=''}=d,TS=294,ldr=parties[0];
   document.getElementById('s-dec').textContent=TD;
   document.getElementById('s-ldr').textContent=ldr?ga(ldr.name):'—';
-  document.getElementById('s-ldr-s').textContent=ldr?`${ldr.total} seats mein aage`:'seats';
+  document.getElementById('s-ldr-s').textContent=ldr?`${ldr.total} seats mein aage`:'';
   document.getElementById('s-upd').textContent=LU||'Live';
   document.getElementById('hdr-sub').textContent=`294 Seats | Majority: 148 | Ghoshit: ${TD}`;
   document.getElementById('ftr-upd').textContent='Last updated: '+(LU||new Date().toLocaleTimeString('en-IN'));
   if(ldr){
     const c=gc(ldr.name),pct=Math.min(100,(ldr.total/TS)*100);
     const fill=document.getElementById('maj-fill');
-    fill.style.background=`linear-gradient(90deg,${c}99,${c})`;fill.style.boxShadow=`0 0 18px ${c}40`;
+    fill.style.background=`linear-gradient(90deg,${c}99,${c})`;
+    fill.style.boxShadow=`0 0 18px ${c}40`;
     document.getElementById('maj-ldr').textContent=`${ga(ldr.name)} — ${ldr.total} seats | ${ldr.total>=148?'✅ Bahumat Hasi!':'⚠️ Bahumat se '+(148-ldr.total)+' door'}`;
+    document.getElementById('map-badge').textContent=ga(ldr.name)+' leads '+ldr.total;
     document.getElementById('map-badge').style.color=c;
     setTimeout(()=>{fill.style.width=pct+'%';document.getElementById('maj-ft').textContent=ldr.total;},100);
   }
@@ -370,29 +252,24 @@ function render(d){
     grid.appendChild(el);
   });
   setTimeout(()=>document.querySelectorAll('.pc-bf').forEach(e=>{e.style.width=e.dataset.w+'%';}),200);
-  // Dist
+  // Dist bar
   const db=document.getElementById('dist-bar'),dl=document.getElementById('dist-leg');
   db.innerHTML='';dl.innerHTML='';document.getElementById('dd').textContent=TD;
   parties.forEach((p,i)=>{
     const c=gc(p.name,i),pct=(p.total/TS)*100,abbr=ga(p.name);
-    if(pct<0.2)return;
-    const seg=document.createElement('div');seg.className='db-s';
-    seg.style.cssText=`width:0%;background:${c}`;seg.title=`${abbr}: ${p.total}`;
-    if(pct>4)seg.textContent=p.total;
+    if(pct<0.3)return;
+    const seg=document.createElement('div');seg.className='db-s';seg.style.cssText=`width:0%;background:${c}`;seg.title=`${abbr}: ${p.total}`;if(pct>5)seg.textContent=p.total;
     db.appendChild(seg);setTimeout(()=>{seg.style.width=pct+'%';},150);
     dl.appendChild(Object.assign(document.createElement('div'),{className:'dl-i',innerHTML:`<div class="dl-d" style="background:${c}"></div><span>${abbr}</span>&nbsp;<strong style="color:var(--t1)">${p.total}</strong>`}));
   });
   const und=TS-TD;
   if(und>0){
-    const pct=(und/TS)*100,seg=document.createElement('div');seg.className='db-s';
-    seg.style.cssText='width:0%;background:rgba(255,255,255,.05);color:rgba(255,255,255,.25)';
-    if(pct>4)seg.textContent=und;
+    const pct=(und/TS)*100,seg=document.createElement('div');seg.className='db-s';seg.style.cssText='width:0%;background:rgba(255,255,255,.05);color:rgba(255,255,255,.25)';if(pct>5)seg.textContent=und;
     db.appendChild(seg);setTimeout(()=>{seg.style.width=pct+'%';},150);
     dl.appendChild(Object.assign(document.createElement('div'),{className:'dl-i',innerHTML:`<div class="dl-d" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)"></div><span>Baaki</span>&nbsp;<strong style="color:var(--t2)">${und}</strong>`}));
   }
   // Table
-  const tb=document.getElementById('tbl-body');tb.innerHTML='';
-  let tw=0,tl=0,tt=0;
+  const tb=document.getElementById('tbl-body');tb.innerHTML='';let tw=0,tl=0,tt=0;
   parties.forEach((p,i)=>{
     const c=gc(p.name,i),logo=gl(p.name,c,i),abbr=ga(p.name),fname=gb(p.name).slice(0,30);
     const row=document.createElement('div');row.className='tbl-r';
@@ -403,52 +280,30 @@ function render(d){
   document.getElementById('tbl-tot').style.display='grid';
 }
 
-function fb(){return{parties:[
-  {name:'Bharatiya Janata Party - BJP',won:80,leading:124,total:204},
-  {name:'All India Trinamool Congress - AITC',won:26,leading:57,total:83},
-  {name:'Indian National Congress - INC',won:1,leading:1,total:2},
-  {name:'Aam Janata Unnayan party - AJUP',won:2,leading:0,total:2},
-  {name:'Communist Party of India (Marxist) - CPI(M)',won:0,leading:1,total:1},
-  {name:'All India Secular Front - AISF',won:0,leading:1,total:1},
-],total_seats:294,total_declared:293,last_updated:'Cached'}}
-
 function showErr(m){const e=document.getElementById('err-bar');e.innerHTML='⚠ '+m;e.style.display='block';setTimeout(()=>e.style.display='none',8000)}
 
-// ══════════════════════════════════════════
-//  TIMER + LOAD
-// ══════════════════════════════════════════
-let timer,secs=60,busy=false,mapDone=false;
+let timer,secs=60,busy=false;
 function tick(){secs--;document.getElementById('cd').textContent=secs;if(secs<=0){secs=60;loadData(false);}}
 function startTimer(){clearInterval(timer);secs=60;document.getElementById('cd').textContent=60;timer=setInterval(tick,1000);}
 function manualRefresh(){if(busy)return;clearInterval(timer);loadData(false);}
 
 async function loadData(first=true){
-  if(busy){startTimer();return;}
-  busy=true;
+  if(busy){startTimer();return;}busy=true;
   if(first){
-    render(fb());
     document.getElementById('loading').style.display='none';
     document.getElementById('app').style.display='block';
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      initMap();
-      loadGeoAndColor({});  // show WB outline immediately
-      // Then fetch seatmap colors
-      setTimeout(async()=>{
-        const sm=await fetchSeatMap();
-        if(sm)loadGeoAndColor(sm);
-      },2000);
-    }));
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{initMap();drawMap();}));
   }
   startTimer();
   try{
-    const d=await Promise.race([fetchParty(),new Promise((_,rj)=>setTimeout(()=>rj(new Error('timeout')),14000))]);
-    render(d);busy=false;
-  }catch(e){showErr('Auto-refresh try karega...');busy=false;}
+    const d=await Promise.race([fetchResults(),new Promise((_,rj)=>setTimeout(()=>rj(new Error('timeout')),15000))]);
+    render(d);
+  }catch(e){showErr('Live data load nahi hua — auto-refresh try karega.');}
+  busy=false;
 }
 
 function trackVisit(){const k='wb26_vc',n=parseInt(localStorage.getItem(k)||'0')+1;localStorage.setItem(k,n);document.getElementById('vc-n').textContent=n.toLocaleString('en-IN');}
-trackVisit();
-loadData(true);
+trackVisit();loadData(true);
 </script>
 </body>
 </html>

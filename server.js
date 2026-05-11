@@ -126,10 +126,24 @@ refresh();
 setTimeout(refreshSeatMap, 3000);
 
 // ── Endpoints ──────────────────────────────
+// Hardcoded final results (shown when ECI server is unavailable)
+const FINAL_RESULTS = {
+  parties: [
+    { name: 'Bharatiya Janata Party - BJP',          won: 207, leading: 0, total: 207 },
+    { name: 'All India Trinamool Congress - AITC',    won: 80,  leading: 0, total: 80  },
+    { name: 'Indian National Congress - INC',         won: 2,   leading: 0, total: 2   },
+    { name: 'Aam Janata Unnayan party - AJUP',        won: 2,   leading: 0, total: 2   },
+    { name: 'Communist Party of India (Marxist) - CPI(M)', won: 1, leading: 0, total: 1 },
+    { name: 'All India Secular Front - AISF',         won: 1,   leading: 0, total: 1   },
+  ],
+  total_declared: 293,
+  last_updated: '04:18 PM On 05/05/2026'
+};
+
 app.get('/api/results', async (req, res) => {
   if (!cache.data || Date.now() - cache.ts > 90_000) await refresh();
-  if (cache.data) return res.json(cache.data);
-  res.status(500).json({ error: 'ECI unavailable' });
+  // Return live data if available, else hardcoded final results (never 500)
+  res.json(cache.data || FINAL_RESULTS);
 });
 
 app.get('/api/party', async (req, res) => {

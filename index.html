@@ -361,26 +361,30 @@ async function loadData(first=true){
   busy=false;
 }
 async function trackVisit(){
-  // Use counterapi.dev — free global counter, works across all devices
-  const COUNTER_URL='https://api.counterapi.dev/v1/ankansoul-wb2026/hits';
+  // ✅ Global counter — server pe store hota hai, sab ko same number dikhega
   try{
-    // Count once per browser session only
+    // Ek page load = ek visit (sessionStorage se double count rokein)
     const already=sessionStorage.getItem('wb26_counted');
-    const url=already?COUNTER_URL:COUNTER_URL+'/up';
+    const endpoint=already?'/api/visitors':'/api/visit';
     if(!already) sessionStorage.setItem('wb26_counted','1');
-    const r=await fetch(url);
+
+    const r=await fetch(API+endpoint);
     if(r.ok){
       const d=await r.json();
-      const count=d.count||d.value||0;
-      document.getElementById('vc-n').textContent=count.toLocaleString('en-IN');
+      document.getElementById('vc-n').textContent=(d.count||0).toLocaleString('en-IN');
+
+      // Auto-update count every 30s (live feel)
+      setInterval(async()=>{
+        try{
+          const rv=await fetch(API+'/api/visitors');
+          if(rv.ok){const dv=await rv.json();document.getElementById('vc-n').textContent=(dv.count||0).toLocaleString('en-IN');}
+        }catch{}
+      }, 30000);
       return;
     }
-  }catch(e){console.warn('Counter API:',e);}
-  // Fallback: localStorage (local count only)
-  const k='wb26_vc';
-  const n=parseInt(localStorage.getItem(k)||'0')+1;
-  localStorage.setItem(k,n);
-  document.getElementById('vc-n').textContent=n.toLocaleString('en-IN');
+  }catch(e){console.warn('Visitor counter:',e);}
+  // Fallback (agar server down ho)
+  document.getElementById('vc-n').textContent='—';
 }
 trackVisit();loadData(true);
 </script>

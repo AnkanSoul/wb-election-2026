@@ -6,7 +6,7 @@
 <title>WB Election 2026 Live Results</title>
 <link rel='shortcut icon' href='./assets/logos/favicon.ico' type="image/x-icon">
 <link rel="icon" href="data:,">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#040c1e;--card:#091828;--b1:rgba(70,120,255,.1);--t1:#ddeaff;--t2:#7a9ec8;--t3:#3a5872;--red:#ef4444;--saffron:#FF6600;--blue:#3b82f6}
@@ -45,7 +45,7 @@ a{color:var(--blue);text-decoration:none}
 .maj-mk{position:absolute;top:0;bottom:0;left:50.34%;width:2px;background:rgba(255,255,255,.3)}
 .maj-mk::after{content:'148';position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,.45);font-weight:700}
 .maj-ax{display:flex;justify-content:space-between;margin-top:5px;font-size:10px;color:var(--t3)}
-.cols{display:grid;grid-template-columns:1fr 300px;gap:16px;margin-bottom:16px;align-items:start}
+.cols{display:grid;grid-template-columns:1fr 310px;gap:16px;margin-bottom:16px;align-items:start}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(138px,1fr));gap:10px;margin-bottom:16px}
 .pc{background:var(--card);border:1px solid var(--b1);border-radius:11px;padding:13px 12px;position:relative;overflow:hidden;transition:transform .2s}
 .pc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--c)}
@@ -60,8 +60,11 @@ a{color:var(--blue);text-decoration:none}
 .pc-bf{height:100%;background:var(--c);border-radius:2px;width:0;transition:width 1.2s ease}
 .map-card{background:var(--card);border:1px solid var(--b1);border-radius:12px;overflow:hidden}
 .map-hd{padding:11px 15px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center}
-#map{height:500px;width:100%;display:block}
-.map-st{padding:6px 12px;font-size:11px;color:var(--t3);border-top:1px solid var(--b1);text-align:center}
+#map{height:520px;width:100%;display:block}
+.map-leg{padding:8px 12px;border-top:1px solid var(--b1);display:flex;flex-wrap:wrap;gap:7px}
+.ml-i{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t2)}
+.ml-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.map-st{padding:5px 12px;font-size:10px;color:var(--t3);border-top:1px solid var(--b1);text-align:center}
 .dist{background:var(--card);border:1px solid var(--b1);border-radius:12px;padding:15px 20px;margin-bottom:16px}
 .dist-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);margin-bottom:11px}
 .dist-bar{height:28px;border-radius:8px;overflow:hidden;display:flex;margin-bottom:10px}
@@ -73,12 +76,10 @@ a{color:var(--blue);text-decoration:none}
 .tbl-ttl{padding:12px 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);border-bottom:1px solid var(--b1)}
 .tbl-h{display:grid;grid-template-columns:1fr 70px 82px 70px;padding:8px 20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.04)}
 .tbl-r{display:grid;grid-template-columns:1fr 70px 82px 70px;padding:11px 20px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center;transition:background .15s}
-.tbl-r:hover{background:rgba(255,255,255,.03)}
-.tbl-r:last-child{border-bottom:none}
+.tbl-r:hover{background:rgba(255,255,255,.03)}.tbl-r:last-child{border-bottom:none}
 .tbl-p{display:flex;align-items:center;gap:9px}
 .tbl-lw{width:32px;height:32px;border-radius:7px;flex-shrink:0;background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;overflow:hidden}
-.tbl-ab{font-size:13px;font-weight:700}
-.tbl-fn{font-size:10px;color:var(--t3);margin-top:1px}
+.tbl-ab{font-size:13px;font-weight:700}.tbl-fn{font-size:10px;color:var(--t3);margin-top:1px}
 .tbl-w{text-align:center;font-size:15px;font-weight:800;color:#10b981}
 .tbl-l{text-align:center;font-size:15px;font-weight:800;color:#3b82f6}
 .tbl-t{text-align:center;font-size:17px;font-weight:900;color:var(--t1)}
@@ -92,7 +93,7 @@ a{color:var(--blue);text-decoration:none}
 .vc-n{font-size:24px;font-weight:900;color:var(--t1);letter-spacing:-1px;line-height:1.1}
 .err-bar{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:#fca5a5;margin-bottom:14px;display:none}
 @media(max-width:860px){.cols{grid-template-columns:1fr}}
-@media(max-width:580px){.hdr-i{padding:12px 14px}.hdr-title{font-size:17px}.main{padding:12px 12px 22px}.pgrid{grid-template-columns:repeat(2,1fr)}.tbl-h,.tbl-r,.tbl-tot{grid-template-columns:1fr 50px 64px 50px;padding:9px 12px}#map{height:350px}}
+@media(max-width:580px){.hdr-i{padding:12px 14px}.hdr-title{font-size:17px}.main{padding:12px 12px 22px}.pgrid{grid-template-columns:repeat(2,1fr)}.tbl-h,.tbl-r,.tbl-tot{grid-template-columns:1fr 50px 64px 50px;padding:9px 12px}#map{height:380px}}
 </style>
 </head>
 <body>
@@ -130,6 +131,7 @@ a{color:var(--blue);text-decoration:none}
     <div class="map-card">
       <div class="map-hd"><span>West Bengal — Live Map</span><span id="map-badge" style="font-size:10px;font-weight:800"></span></div>
       <div id="map"></div>
+      <div class="map-leg" id="map-leg"></div>
       <div class="map-st" id="map-st">Map load ho raha hai...</div>
     </div>
   </div>
@@ -166,56 +168,114 @@ a{color:var(--blue);text-decoration:none}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const API='https://wb-election-api.onrender.com';
+
+// Party colors & logos
 const LOGOS={BJP:`<img src="./assets/logos/bjp.png" style="width:100%;height:100%;object-fit:contain;">`,AITC:`<img src="./assets/logos/aitc.png" style="width:100%;height:100%;object-fit:contain;">`,'CPI(M)':`<img src="./assets/logos/cpim.png" style="width:100%;height:100%;object-fit:contain;">`,BGPM:`<img src="./assets/logos/bgpm.webp" style="width:100%;height:100%;object-fit:contain;">`,AJUP:`<img src="./assets/logos/ajup.png" style="width:100%;height:100%;object-fit:contain;">`,INC:`<img src="./assets/logos/inc.png" style="width:100%;height:100%;object-fit:contain;">`,AISF:`<img src="./assets/logos/aisf.png" style="width:100%;height:100%;object-fit:contain;">`};
 const CLR={BJP:'#FF6600',AITC:'#1565C0','CPI(M)':'#B71C1C',BGPM:'#7B1FA2',AJUP:'#00695C',INC:'#0D47A1',BSP:'#4A148C',RSP:'#C62828',CPI:'#D32F2F',AISF:'#E91E63'};
 const POOL=['#1976D2','#C2185B','#00796B','#E65100','#512DA8','#2E7D32','#0288D1','#795548'];
+
 function gc(n,i=0){const u=(n||'').toUpperCase();for(const[k,c]of Object.entries(CLR))if(u.includes(k))return c;return POOL[i%POOL.length]}
 function ga(n){const m=(n||'').match(/[-–]\s*([A-Z()\s]{2,})\s*$/);if(m)return m[1].trim();return(n||'').split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().slice(0,5)||'OTH'}
 function gb(n){return(n||'').replace(/\s*[-–][^-–]+$/,'').trim()}
 function gl(n,c,i){const u=(n||'').toUpperCase();for(const[k,s]of Object.entries(LOGOS))if(u.includes(k))return s;const a=ga(n).slice(0,3);return`<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="23" fill="${c}1a" stroke="${c}" stroke-width="2"/><text x="24" y="30" text-anchor="middle" font-size="13" font-weight="900" fill="${c}" font-family="system-ui">${a}</text></svg>`}
+function normAbbr(n){const u=(n||'').toUpperCase();if(u.includes('BJP')||u.includes('BHARATIYA JANATA'))return'BJP';if(u.includes('AITC')||u.includes('TRINAMOOL'))return'AITC';if(u.includes('AISF')||u.includes('SECULAR'))return'AISF';if(u.includes('BGPM')||u.includes('GORKHA PRAJATANTRIK'))return'BGPM';if(u.includes('AJUP')||u.includes('UNNAYAN'))return'AJUP';if(u.includes('CPI(M)')||u.includes('MARXIST'))return'CPI(M)';if(u.includes('CPI'))return'CPI';if(u.includes('INC')||u.includes('NATIONAL CONGRESS'))return'INC';if(u.includes('BSP')||u.includes('BAHUJAN'))return'BSP';if(u.includes('RSP')||u.includes('REVOLUTIONARY'))return'RSP';return null}
 
-// MAP — fixed visibility
-let lmap=null,gLayer=null,geo=null;
+// ══════════════════════════════════════════
+// FALLBACK — always available
+// ══════════════════════════════════════════
+const FALLBACK={
+  parties:[
+    {name:'Bharatiya Janata Party - BJP',won:207,leading:0,total:207},
+    {name:'All India Trinamool Congress - AITC',won:80,leading:0,total:80},
+    {name:'Indian National Congress - INC',won:2,leading:0,total:2},
+    {name:'Aam Janata Unnayan party - AJUP',won:2,leading:0,total:2},
+    {name:'Communist Party of India (Marxist) - CPI(M)',won:1,leading:0,total:1},
+    {name:'All India Secular Front - AISF',won:1,leading:0,total:1},
+  ],
+  total_declared:293,
+  last_updated:'Final Results — ECI May 2026'
+};
+
+// ══════════════════════════════════════════
+// MAP — with constituency colors
+// ══════════════════════════════════════════
+let lmap=null, gLayer=null, geo=null;
+
 function initMap(){
   if(lmap)return;
   lmap=L.map('map',{center:[23.5,87.5],zoom:7});
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OSM © CARTO',subdomains:'abcd',maxZoom:19}).addTo(lmap);
 }
-async function drawMap(){
-  if(!lmap)return;
-  if(!geo){
-    try{
-      const r=await fetch('./data/wb-ac.geojson');
-      if(!r.ok)throw new Error('GeoJSON '+r.status);
-      geo=await r.json();
-    }catch(e){
-      document.getElementById('map-st').textContent='⚠️ Map data load nahi hua: '+e.message;
-      return;
-    }
-  }
+
+function drawMap(seatMap){
+  if(!lmap||!geo)return;
   if(gLayer){gLayer.remove();gLayer=null;}
+  const hasSeatData=seatMap&&Object.keys(seatMap).length>10;
   gLayer=L.geoJSON(geo,{
-    style:()=>({
-      fillColor:'#2a5298',   // visible blue on dark bg
-      fillOpacity:0.7,
-      color:'#ffffff',        // white borders — clearly visible
-      weight:1
-    }),
+    style:f=>{
+      const id=String(f.properties.AC_NO).padStart(3,'0');
+      const party=hasSeatData?seatMap[id]:null;
+      const color=party?CLR[party]||'#888':'#2a5298';
+      return{fillColor:color,fillOpacity:0.82,color:'#fff',weight:0.6};
+    },
     onEachFeature:(f,layer)=>{
+      const id=String(f.properties.AC_NO).padStart(3,'0');
       const name=f.properties.AC_NAME||'Seat';
-      const no=f.properties.AC_NO||'';
-      layer.bindTooltip(`<b>${name}</b><br>AC No: ${no}`,{sticky:true});
-      layer.on('mouseover',function(){this.setStyle({fillOpacity:1,fillColor:'#4a7ae2'});});
+      const party=hasSeatData?(seatMap[id]||'—'):'';
+      layer.bindTooltip(`<b>${name}</b>${party?'<br>'+party:''}`,{sticky:true});
+      layer.on('mouseover',function(){this.setStyle({fillOpacity:1,weight:1.5});});
       layer.on('mouseout',function(){gLayer.resetStyle(this);});
     }
   }).addTo(lmap);
-  lmap.fitBounds(gLayer.getBounds(),{padding:[8,8]});
+  lmap.fitBounds(gLayer.getBounds(),{padding:[6,6]});
   setTimeout(()=>lmap.invalidateSize(),300);
-  const count=geo.features?.length||0;
-  document.getElementById('map-st').textContent=`✅ West Bengal — ${count} constituencies`;
+  // Legend
+  if(hasSeatData){
+    const seen={};
+    Object.values(seatMap).forEach(p=>{if(p&&CLR[p])seen[p]=CLR[p];});
+    document.getElementById('map-leg').innerHTML=Object.entries(seen).map(([p,c])=>`<div class="ml-i"><div class="ml-dot" style="background:${c}"></div>${p}</div>`).join('');
+    const cnt=Object.keys(seatMap).length;
+    document.getElementById('map-st').textContent=`✅ ${cnt} constituencies colored`;
+  }else{
+    document.getElementById('map-st').textContent=`✅ West Bengal — ${geo.features?.length||0} constituencies`;
+  }
 }
 
-// DATA
+async function loadGeoAndDraw(seatMap){
+  if(!geo){
+    try{const r=await fetch('./data/wb-ac.geojson');if(r.ok)geo=await r.json();}
+    catch(e){document.getElementById('map-st').textContent='⚠️ GeoJSON: '+e.message;return;}
+  }
+  if(!geo)return;
+  drawMap(seatMap);
+}
+
+// Parse party page HTML to get constituency data (if embedded)
+function extractSeatMapFromHTML(html){
+  const seatMap={};
+  // Try to find JSON data arrays in page
+  const matches=[...html.matchAll(/\[\s*\{[^\[\]]{50,5000}\}\s*\]/g)];
+  for(const m of matches){
+    try{
+      const arr=JSON.parse(m[0]);
+      if(!Array.isArray(arr)||arr.length<5)continue;
+      const first=arr[0];
+      if(('ac_no'in first||'AC_NO'in first)&&('party'in first||'PARTY'in first)){
+        arr.forEach(it=>{
+          const id=String(it.ac_no||it.AC_NO||'').padStart(3,'0');
+          const p=normAbbr(it.party||it.PARTY||'');
+          if(id!=='000'&&p)seatMap[id]=p;
+        });
+        if(Object.keys(seatMap).length>10)return seatMap;
+      }
+    }catch{}
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════
+// DATA FETCH
+// ══════════════════════════════════════════
 async function fetchResults(){
   const r=await fetch(`${API}/api/results`);
   if(!r.ok)throw new Error('HTTP '+r.status);
@@ -224,6 +284,18 @@ async function fetchResults(){
   return d;
 }
 
+async function fetchPartyHTMLForSeatMap(){
+  try{
+    const r=await fetch(`${API}/api/party`);
+    if(!r.ok)return null;
+    const html=await r.text();
+    return extractSeatMapFromHTML(html);
+  }catch{return null;}
+}
+
+// ══════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════
 function render(d){
   if(!d||!d.parties||!d.parties.length)return;
   const{parties,total_declared:TD=0,last_updated:LU=''}=d,TS=294,ldr=parties[0];
@@ -236,14 +308,12 @@ function render(d){
   if(ldr){
     const c=gc(ldr.name),pct=Math.min(100,(ldr.total/TS)*100);
     const fill=document.getElementById('maj-fill');
-    fill.style.background=`linear-gradient(90deg,${c}99,${c})`;
-    fill.style.boxShadow=`0 0 18px ${c}40`;
+    fill.style.background=`linear-gradient(90deg,${c}99,${c})`;fill.style.boxShadow=`0 0 18px ${c}40`;
     document.getElementById('maj-ldr').textContent=`${ga(ldr.name)} — ${ldr.total} seats | ${ldr.total>=148?'✅ Bahumat Hasi!':'⚠️ Bahumat se '+(148-ldr.total)+' door'}`;
     document.getElementById('map-badge').textContent=ga(ldr.name)+' leads '+ldr.total;
     document.getElementById('map-badge').style.color=c;
     setTimeout(()=>{fill.style.width=pct+'%';document.getElementById('maj-ft').textContent=ldr.total;},100);
   }
-  // Cards
   const grid=document.getElementById('pgrid');grid.innerHTML='';
   parties.slice(0,8).forEach((p,i)=>{
     const c=gc(p.name,i),logo=gl(p.name,c,i),abbr=ga(p.name),fname=gb(p.name),pct=TD>0?(p.total/TD)*100:0;
@@ -252,7 +322,6 @@ function render(d){
     grid.appendChild(el);
   });
   setTimeout(()=>document.querySelectorAll('.pc-bf').forEach(e=>{e.style.width=e.dataset.w+'%';}),200);
-  // Dist bar
   const db=document.getElementById('dist-bar'),dl=document.getElementById('dist-leg');
   db.innerHTML='';dl.innerHTML='';document.getElementById('dd').textContent=TD;
   parties.forEach((p,i)=>{
@@ -262,13 +331,7 @@ function render(d){
     db.appendChild(seg);setTimeout(()=>{seg.style.width=pct+'%';},150);
     dl.appendChild(Object.assign(document.createElement('div'),{className:'dl-i',innerHTML:`<div class="dl-d" style="background:${c}"></div><span>${abbr}</span>&nbsp;<strong style="color:var(--t1)">${p.total}</strong>`}));
   });
-  const und=TS-TD;
-  if(und>0){
-    const pct=(und/TS)*100,seg=document.createElement('div');seg.className='db-s';seg.style.cssText='width:0%;background:rgba(255,255,255,.05);color:rgba(255,255,255,.25)';if(pct>5)seg.textContent=und;
-    db.appendChild(seg);setTimeout(()=>{seg.style.width=pct+'%';},150);
-    dl.appendChild(Object.assign(document.createElement('div'),{className:'dl-i',innerHTML:`<div class="dl-d" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)"></div><span>Baaki</span>&nbsp;<strong style="color:var(--t2)">${und}</strong>`}));
-  }
-  // Table
+  const und=TS-TD;if(und>0){const pct=(und/TS)*100,seg=document.createElement('div');seg.className='db-s';seg.style.cssText='width:0%;background:rgba(255,255,255,.05);color:rgba(255,255,255,.25)';if(pct>5)seg.textContent=und;db.appendChild(seg);setTimeout(()=>{seg.style.width=pct+'%';},150);dl.appendChild(Object.assign(document.createElement('div'),{className:'dl-i',innerHTML:`<div class="dl-d" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)"></div><span>Baaki</span>&nbsp;<strong style="color:var(--t2)">${und}</strong>`}));}
   const tb=document.getElementById('tbl-body');tb.innerHTML='';let tw=0,tl=0,tt=0;
   parties.forEach((p,i)=>{
     const c=gc(p.name,i),logo=gl(p.name,c,i),abbr=ga(p.name),fname=gb(p.name).slice(0,30);
@@ -282,28 +345,44 @@ function render(d){
 
 function showErr(m){const e=document.getElementById('err-bar');e.innerHTML='⚠ '+m;e.style.display='block';setTimeout(()=>e.style.display='none',8000)}
 
-let timer,secs=60,busy=false;
+let timer,secs=60,busy=false,mapInitDone=false;
 function tick(){secs--;document.getElementById('cd').textContent=secs;if(secs<=0){secs=60;loadData(false);}}
 function startTimer(){clearInterval(timer);secs=60;document.getElementById('cd').textContent=60;timer=setInterval(tick,1000);}
 function manualRefresh(){if(busy)return;clearInterval(timer);loadData(false);}
 
 async function loadData(first=true){
   if(busy){startTimer();return;}busy=true;
+
   if(first){
+    // Show fallback data immediately — no blank screen
+    render(FALLBACK);
     document.getElementById('loading').style.display='none';
     document.getElementById('app').style.display='block';
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{initMap();drawMap();}));
+    // Init map
+    requestAnimationFrame(()=>requestAnimationFrame(async()=>{
+      initMap();
+      await loadGeoAndDraw(null);
+      mapInitDone=true;
+      // Try to get constituency colors from ECI HTML
+      fetchPartyHTMLForSeatMap().then(sm=>{if(sm&&Object.keys(sm).length>10)drawMap(sm);});
+    }));
   }
+
   startTimer();
+
   try{
     const d=await Promise.race([fetchResults(),new Promise((_,rj)=>setTimeout(()=>rj(new Error('timeout')),15000))]);
     render(d);
-  }catch(e){showErr('Live data load nahi hua — auto-refresh try karega.');}
+  }catch(e){
+    // Keep fallback, show soft error
+    showErr('Live data load nahi hua — fallback data dikh raha hai.');
+  }
   busy=false;
 }
 
 function trackVisit(){const k='wb26_vc',n=parseInt(localStorage.getItem(k)||'0')+1;localStorage.setItem(k,n);document.getElementById('vc-n').textContent=n.toLocaleString('en-IN');}
-trackVisit();loadData(true);
+trackVisit();
+loadData(true);
 </script>
 </body>
 </html>

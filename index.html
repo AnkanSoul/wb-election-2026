@@ -60,7 +60,7 @@ a{color:var(--blue);text-decoration:none}
 .pc-bf{height:100%;background:var(--c);border-radius:2px;width:0;transition:width 1.2s ease}
 .map-card{background:var(--card);border:1px solid var(--b1);border-radius:12px;overflow:hidden}
 .map-hd{padding:11px 15px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--t3);border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center}
-#map{height:520px;width:100%;display:block}
+#map{height:520px;width:100%;display:block}.map-tip{background:#091828;border:1px solid rgba(70,120,255,.4);color:#ddeaff;font-size:12px;border-radius:6px;padding:6px 10px;box-shadow:0 4px 12px rgba(0,0,0,.5)}
 .map-leg{padding:8px 12px;border-top:1px solid var(--b1);display:flex;flex-wrap:wrap;gap:7px}
 .ml-i{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t2)}
 .ml-dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
@@ -197,29 +197,31 @@ function initMap(){
 // ECI party colors (from their page source)
 const ECI_CLR={BJP:'#ff944d',AITC:'#aebedf',INC:'#19AAED',AJUP:'#244ffa','CPI(M)':'#FF1D15',AISF:'#7bfb79',BSP:'#0000ff',RSP:'#800080',CPI:'#cc0000',BGPM:'#7B1FA2',GNLF:'#795548'};
 
-function applyMap(sm, cm){
+function applyMap(sm, cm, cand){
   if(!lmap||!geo)return;
   currentSeatMap=sm;
   if(gLayer){gLayer.remove();gLayer=null;}
   const hasSM=sm&&Object.keys(sm).length>10;
   const hasCM=cm&&Object.keys(cm).length>10;
+  const hasCand=cand&&Object.keys(cand).length>10;
   gLayer=L.geoJSON(geo,{
     style:f=>{
       const id=String(f.properties.AC_NO).padStart(3,'0');
-      // Use ECI's colorMap directly (most accurate)
       let color='#2a5298';
-      if(hasCM && cm[id]) color=cm[id];
-      else if(hasSM && sm[id]){
-        const abbr=normA(sm[id]);
-        color=ECI_CLR[abbr]||CLR[abbr]||'#888888';
-      }
+      if(hasCM&&cm[id]) color=cm[id];
+      else if(hasSM&&sm[id]){const abbr=normA(sm[id]);color=ECI_CLR[abbr]||CLR[abbr]||'#888888';}
       return{fillColor:color,fillOpacity:0.9,color:'#ffffff',weight:0.6};
     },
     onEachFeature:(f,layer)=>{
       const id=String(f.properties.AC_NO).padStart(3,'0');
-      const name=f.properties.AC_NAME||'Seat';
+      // Try all possible AC_NAME property keys
+      const name=f.properties.AC_NAME||f.properties.NAME_1||f.properties.name||f.properties.CONSTITUENCY||('Seat '+f.properties.AC_NO);
       const party=hasSM?(sm[id]||'—'):'';
-      layer.bindTooltip('<b>'+name+'</b>'+(party?'<br>'+party:''),{sticky:true});
+      const candidate=hasCand?(cand[id]||''):'';
+      let tip='<b>'+name+'</b>';
+      if(party) tip+='<br><span style="color:#aaa;font-size:10px">Party:</span> '+party;
+      if(candidate) tip+='<br><span style="color:#aaa;font-size:10px">Winner:</span> '+candidate;
+      layer.bindTooltip(tip,{sticky:true,className:'map-tip'});
       layer.on('mouseover',function(){this.setStyle({fillOpacity:1,weight:1.5});});
       layer.on('mouseout',function(){gLayer.resetStyle(this);});
     }
@@ -227,7 +229,6 @@ function applyMap(sm, cm){
   lmap.fitBounds(gLayer.getBounds(),{padding:[6,6]});
   setTimeout(()=>lmap.invalidateSize(),300);
   if(hasSM){
-    // Build legend from ECI colors
     const seen={};
     Object.entries(sm).forEach(([id,p])=>{
       const abbr=normA(p)||p;
@@ -253,13 +254,13 @@ async function loadMap(){
       const d=await r.json();
       const chartData=d?.S25?.chartData;
       if(chartData&&chartData.length>10){
-        const sm={},cm={};
+        const sm={},cm={},cand={};
         chartData.forEach(entry=>{
-          const [party,,acNo,,color]=entry;
+          const [party,,acNo,candidate,color]=entry;
           const id=String(acNo).padStart(3,'0');
-          sm[id]=party; cm[id]=color;
+          sm[id]=party; cm[id]=color; cand[id]=candidate;
         });
-        applyMap(sm,cm);
+        applyMap(sm,cm,cand);
         document.getElementById('map-st').textContent='Constituencies colored: '+Object.keys(sm).length;
         return;
       }

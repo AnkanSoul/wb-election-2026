@@ -179,5 +179,45 @@ app.get('/api/raw', async (req, res) => {
   res.send(r.ok ? `OK len=${r.text.length}\n\n${r.text.slice(0,5000)}` : `FAILED status=${r.status}`);
 });
 
+// ══════════════════════════════════════════
+// GLOBAL VISITOR COUNTER
+// Server-side counter — same number for ALL users
+// Uses counterapi.dev for persistence across restarts
+// ══════════════════════════════════════════
+let visitorCount = 0;
+const COUNTER_KEY = 'https://api.counterapi.dev/v1/ankansoul-wb2026/hits';
+
+// Init: Load current count from counterapi on startup
+async function initCounter() {
+  try {
+    const r = await fetch(COUNTER_KEY);
+    if (r.ok) {
+      const d = await r.json();
+      visitorCount = d.count || 0;
+      console.log('Counter initialized:', visitorCount);
+    }
+  } catch (e) {
+    console.warn('Counter init failed:', e.message);
+  }
+}
+
+// Increment counter and return new value
+app.get('/api/visit', async (req, res) => {
+  visitorCount++;
+  const current = visitorCount;
+  // Sync to counterapi in background (fire & forget)
+  fetch(COUNTER_KEY + '/up').catch(() => {});
+  res.json({ count: current });
+});
+
+// Get current count without incrementing
+app.get('/api/visitors', (req, res) => {
+  res.json({ count: visitorCount });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => { console.log(`🔥 API on port ${PORT}`); refresh(); });
+app.listen(PORT, () => {
+  console.log(`🔥 API on port ${PORT}`);
+  refresh();
+  initCounter(); // Load saved count on startup
+});

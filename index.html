@@ -244,20 +244,42 @@ async function loadMap(){
     try{const r=await fetch('./data/wb-ac.geojson');if(r.ok)geo=await r.json();}
     catch(e){document.getElementById('map-st').textContent='GeoJSON error: '+e.message;return;}
   }
-  applyMap(null, null); // show outline first
-  // Fetch constituency colors from ECI JSON
+  applyMap(null, null);
+
+  // Try 1: Local file in repo (fastest, no server needed)
+  try{
+    const r=await fetch('./data/election-json-S25-live.json');
+    if(r.ok){
+      const d=await r.json();
+      const chartData=d?.S25?.chartData;
+      if(chartData&&chartData.length>10){
+        const sm={},cm={};
+        chartData.forEach(entry=>{
+          const [party,,acNo,,color]=entry;
+          const id=String(acNo).padStart(3,'0');
+          sm[id]=party; cm[id]=color;
+        });
+        applyMap(sm,cm);
+        document.getElementById('map-st').textContent='Constituencies colored: '+Object.keys(sm).length;
+        return;
+      }
+    }
+  }catch(e){console.warn('local json:',e);}
+
+  // Try 2: Server seatmap
   try{
     const r=await fetch(API+'/api/seatmap');
     if(r.ok){
       const d=await r.json();
       if(d.count>10){
-        applyMap(d.seatMap, d.colorMap);
+        applyMap(d.seatMap,d.colorMap);
         document.getElementById('map-st').textContent='Constituencies colored: '+d.count;
-      } else {
-        document.getElementById('map-st').textContent='West Bengal — '+( geo?.features?.length||0)+' constituencies';
+        return;
       }
     }
-  }catch(e){ console.warn('seatmap fetch:', e); }
+  }catch(e){console.warn('server seatmap:',e);}
+
+  document.getElementById('map-st').textContent='West Bengal — '+(geo?.features?.length||0)+' constituencies';
 }
 
 // DATA

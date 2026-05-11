@@ -194,23 +194,32 @@ function initMap(){
   lmap=L.map('map',{center:[23.5,87.5],zoom:7});
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OSM © CARTO',subdomains:'abcd',maxZoom:19}).addTo(lmap);
 }
-function applyMap(sm){
+// ECI party colors (from their page source)
+const ECI_CLR={BJP:'#ff944d',AITC:'#aebedf',INC:'#19AAED',AJUP:'#244ffa','CPI(M)':'#FF1D15',AISF:'#7bfb79',BSP:'#0000ff',RSP:'#800080',CPI:'#cc0000',BGPM:'#7B1FA2',GNLF:'#795548'};
+
+function applyMap(sm, cm){
   if(!lmap||!geo)return;
   currentSeatMap=sm;
   if(gLayer){gLayer.remove();gLayer=null;}
   const hasSM=sm&&Object.keys(sm).length>10;
+  const hasCM=cm&&Object.keys(cm).length>10;
   gLayer=L.geoJSON(geo,{
     style:f=>{
       const id=String(f.properties.AC_NO).padStart(3,'0');
-      const p=hasSM?sm[id]:null;
-      const color=p?CLR[p]||'#888888':'#2a5298';
-      return{fillColor:color,fillOpacity:0.85,color:'#ffffff',weight:0.7};
+      // Use ECI's colorMap directly (most accurate)
+      let color='#2a5298';
+      if(hasCM && cm[id]) color=cm[id];
+      else if(hasSM && sm[id]){
+        const abbr=normA(sm[id]);
+        color=ECI_CLR[abbr]||CLR[abbr]||'#888888';
+      }
+      return{fillColor:color,fillOpacity:0.9,color:'#ffffff',weight:0.6};
     },
     onEachFeature:(f,layer)=>{
       const id=String(f.properties.AC_NO).padStart(3,'0');
       const name=f.properties.AC_NAME||'Seat';
-      const p=hasSM?(sm[id]||'—'):'';
-      layer.bindTooltip('<b>'+name+'</b>'+(p?'<br>'+p:''),{sticky:true});
+      const party=hasSM?(sm[id]||'—'):'';
+      layer.bindTooltip('<b>'+name+'</b>'+(party?'<br>'+party:''),{sticky:true});
       layer.on('mouseover',function(){this.setStyle({fillOpacity:1,weight:1.5});});
       layer.on('mouseout',function(){gLayer.resetStyle(this);});
     }
@@ -218,12 +227,16 @@ function applyMap(sm){
   lmap.fitBounds(gLayer.getBounds(),{padding:[6,6]});
   setTimeout(()=>lmap.invalidateSize(),300);
   if(hasSM){
-    const seen={};Object.values(sm).forEach(p=>{if(p&&CLR[p])seen[p]=CLR[p];});
-    document.getElementById('map-leg').innerHTML=Object.entries(seen).map(([p,c])=>'<div class="ml-i"><div class="ml-dot" style="background:'+c+'"></div>'+p+'</div>').join('');
-    document.getElementById('map-st').textContent='Constituency data loaded: '+Object.keys(sm).length+' seats';
+    // Build legend from ECI colors
+    const seen={};
+    Object.entries(sm).forEach(([id,p])=>{
+      const abbr=normA(p)||p;
+      const c=hasCM?cm[id]:(ECI_CLR[abbr]||CLR[abbr]);
+      if(abbr&&c&&!seen[abbr]) seen[abbr]=c;
+    });
+    document.getElementById('map-leg').innerHTML=Object.entries(seen).sort((a,b)=>a[0].localeCompare(b[0])).map(([p,c])=>'<div class="ml-i"><div class="ml-dot" style="background:'+c+'"></div>'+p+'</div>').join('');
   }else{
     document.getElementById('map-leg').innerHTML='';
-    document.getElementById('map-st').textContent='West Bengal — '+( geo.features?.length||0)+' constituencies';
   }
 }
 async function loadMap(){
@@ -231,15 +244,20 @@ async function loadMap(){
     try{const r=await fetch('./data/wb-ac.geojson');if(r.ok)geo=await r.json();}
     catch(e){document.getElementById('map-st').textContent='GeoJSON error: '+e.message;return;}
   }
-  applyMap(currentSeatMap);
-  // Fetch constituency colors
+  applyMap(null, null); // show outline first
+  // Fetch constituency colors from ECI JSON
   try{
     const r=await fetch(API+'/api/seatmap');
     if(r.ok){
       const d=await r.json();
-      if(d.count>10){applyMap(d.seatMap);document.getElementById('map-st').textContent='Constituencies colored: '+d.count;}
+      if(d.count>10){
+        applyMap(d.seatMap, d.colorMap);
+        document.getElementById('map-st').textContent='Constituencies colored: '+d.count;
+      } else {
+        document.getElementById('map-st').textContent='West Bengal — '+( geo?.features?.length||0)+' constituencies';
+      }
     }
-  }catch{}
+  }catch(e){ console.warn('seatmap fetch:', e); }
 }
 
 // DATA
